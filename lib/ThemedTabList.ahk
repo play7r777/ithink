@@ -22,6 +22,16 @@ class ThemedTab {
     static _hooked := false
     static _radius := 8
 
+    ; Static solid-rect fill (ThemedButton._fillRect is instance-only, so we
+    ; provide our own that both ThemedTab and ThemedList can call statically).
+    static _fill(hDC, x, y, w, h, rgb) {
+        br := DllCall("gdi32\CreateSolidBrush", "UInt", ThemedButton._bgr(rgb), "Ptr")
+        rc := Buffer(16, 0)
+        NumPut("Int", x, "Int", y, "Int", x + w, "Int", y + h, rc)
+        DllCall("user32\FillRect", "Ptr", hDC, "Ptr", rc, "Ptr", br)
+        DllCall("gdi32\DeleteObject", "Ptr", br)
+    }
+
     static Init() {
         if !ThemedTab._hooked {
             OnMessage(0x2B, ObjBindMethod(ThemedTab, "_onDrawItem"))   ; WM_DRAWITEM
@@ -78,7 +88,7 @@ class ThemedTab {
         w := R - L, h := B - T
         if (w <= 0 || h <= 0)
             return
-        ThemedButton._fillRect(hDC, L, T, w, h, ThemedButton._h(pal["bg"]))
+        ThemedTab._fill(hDC, L, T, w, h, ThemedButton._h(pal["bg"]))
         if selected {
             top := ThemedButton._blend(ThemedButton._h(pal["accent"]), 0xFFFFFF, 0.12)
             bot := ThemedButton._h(pal["accent"])
@@ -175,7 +185,7 @@ class ThemedList {
         w := R - L, h := B - T
         if (w <= 0 || h <= 0)
             return
-        ThemedButton._fillRect(hDC, L, T, w, h, ThemedButton._h(pal["surface"]))
+        ThemedTab._fill(hDC, L, T, w, h, ThemedButton._h(pal["surface"]))
         if (idx < 0)
             return
         selected := (state & 0x1) ? true : false   ; ODS_SELECTED
