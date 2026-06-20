@@ -29,6 +29,7 @@ CoordMode "Pixel", "Screen"
 #Include lib\JSON.ahk
 #Include lib\Logger.ahk
 #Include lib\Theme.ahk
+#Include lib\Button.ahk
 #Include lib\PresetManager.ahk
 #Include lib\Player.ahk
 #Include lib\HotkeyManager.ahk
@@ -392,7 +393,7 @@ class MacroForgeApp {
 
         ; --- Log tab ---
         if this.logBox {
-            logBtnH := 26
+            logBtnH := 28
             logH := contentH - logBtnH - margin
             try this.logBox.Move(contentX, contentY, contentW, logH)
             bx := contentX, by := contentY + logH + 5
@@ -455,7 +456,7 @@ class MacroForgeApp {
         }
         ; Button rows are anchored to the BOTTOM so the step list takes all the
         ; remaining vertical space.
-        btnH := 26
+        btnH := 28
         rowGap := 10
         playY := y + h - btnH
         stepBtnY := playY - btnH - rowGap
@@ -706,19 +707,19 @@ class MacroForgeApp {
         this.presetList := g.AddListBox("xm y+3 w180 h420 vPresetList")
         this.presetList.OnEvent("Change", (*) => this._onPresetPick())
 
-        newBtn := g.AddButton("xm y+5 w85", "New")
+        newBtn := g.AddButton("xm y+8 w85 h28", "New")
         newBtn.OnEvent("Click", (*) => this._newPreset())
-        this.deleteBtn := g.AddButton("x+10 yp w85", "Delete")
+        this.deleteBtn := g.AddButton("x+10 yp w85 h28", "Delete")
         this.deleteBtn.OnEvent("Click", (*) => this._deletePreset())
-        this.renameBtn := g.AddButton("xm y+5 w85", "Rename")
+        this.renameBtn := g.AddButton("xm y+6 w85 h28", "Rename")
         this.renameBtn.OnEvent("Click", (*) => this._renamePreset())
-        reloadBtn := g.AddButton("x+10 yp w85", "Reload")
+        reloadBtn := g.AddButton("x+10 yp w85 h28", "Reload")
         reloadBtn.OnEvent("Click", (*) => this._reloadPreset())
-        this.saveBtn := g.AddButton("xm y+5 w180", "Save Preset")
+        this.saveBtn := g.AddButton("xm y+6 w180 h28", "Save Preset")
         this.saveBtn.OnEvent("Click", (*) => this._savePreset())
-        importBtn := g.AddButton("xm y+5 w85", "Import .json")
+        importBtn := g.AddButton("xm y+6 w85 h28", "Import .json")
         importBtn.OnEvent("Click", (*) => this._importPreset())
-        openFolderBtn := g.AddButton("x+10 yp w85", "Open Folder")
+        openFolderBtn := g.AddButton("x+10 yp w85 h28", "Open Folder")
         openFolderBtn.OnEvent("Click", (*) => Run('explorer.exe "' Cfg.PRESETS_DIR '"'))
         this._themeButtons.Push(newBtn, this.deleteBtn, this.renameBtn, reloadBtn, this.saveBtn, importBtn, openFolderBtn)
 
@@ -809,7 +810,7 @@ class MacroForgeApp {
         this._addHotkeyRow(g, "stop",  "Stop:")
         this._addHotkeyRow(g, "pause", "Pause/Resume:")
         this._addHotkeyRow(g, "panic", "Panic (stop + release keys):")
-        this.applyHkBtn := g.AddButton("xs y+15 w180", "Apply Hotkeys")
+        this.applyHkBtn := g.AddButton("xs y+15 w180 h28", "Apply Hotkeys")
         this.applyHkBtn.OnEvent("Click", (*) => this._applyHotkeysFromUi())
         this._themeButtons.Push(this.applyHkBtn)
         this._editableCtrls.Push(this.applyHkBtn)
@@ -817,9 +818,9 @@ class MacroForgeApp {
         ; ---------------- Log tab ----------------
         this.tabs.UseTab("Log")
         this.logBox := g.AddEdit("w870 h640 Section +ReadOnly +Multi +WantReturn")
-        logClearBtn := g.AddButton("xs y+5 w90", "Clear")
+        logClearBtn := g.AddButton("xs y+5 w90 h28", "Clear")
         logClearBtn.OnEvent("Click", (*) => (this.logBox.Value := "", Logger.Clear()))
-        logOpenBtn := g.AddButton("x+5 yp w90", "Open Log Folder")
+        logOpenBtn := g.AddButton("x+5 yp w90 h28", "Open Log Folder")
         logOpenBtn.OnEvent("Click", (*) => Run('explorer.exe "' Cfg.LOGS_DIR '"'))
         this.logBtns := [logClearBtn, logOpenBtn]
         for b in this.logBtns
@@ -849,9 +850,41 @@ class MacroForgeApp {
         g.OnEvent("Size", ObjBindMethod(this, "_onGuiSize"))
 
         this.gui := g
+        ; Convert every native button into an owner-drawn ThemedButton so the
+        ; palette, hover/pressed states and rounded corners actually render.
+        this._skinButtons()
         ; Paint the whole window with the active theme (dark/light) once every
         ; control exists, then push the matching palette to the WebView board.
         this._applyTheme(Theme.current)
+    }
+
+    ; Assign a visual role to each button and hand them to ThemedButton, which
+    ; owner-draws them. Roles drive the accent: primary = main action,
+    ; success = playback start/record, danger = destructive, secondary = rest.
+    _skinButtons() {
+        ThemedButton.Init()
+        roles := Map()
+        for b in [this.saveBtn, this.applyHkBtn]
+            if (b is Gui.Control)
+                roles[b.Hwnd] := "primary"
+        success := [this.recBtn]
+        danger  := [this.deleteBtn, this.clearStepBtn]
+        if (this.playBtns.Length >= 4) {
+            success.Push(this.playBtns[2])   ; Start
+            danger.Push(this.playBtns[4])    ; Stop
+        }
+        for b in success
+            if (b is Gui.Control)
+                roles[b.Hwnd] := "success"
+        for b in danger
+            if (b is Gui.Control)
+                roles[b.Hwnd] := "danger"
+        for b in this._themeButtons {
+            try {
+                role := roles.Has(b.Hwnd) ? roles[b.Hwnd] : "secondary"
+                ThemedButton.Attach(b, role)
+            }
+        }
     }
 
     ; ======================= THEMING =======================
@@ -922,6 +955,9 @@ class MacroForgeApp {
             this.gui.Opt("+Redraw")
             WinRedraw("ahk_id " this.gui.Hwnd)
         }
+
+        ; Repaint owner-drawn buttons so they adopt the new palette.
+        try ThemedButton.RefreshAll()
 
         ; Keep the board in sync (no-op until the WebView is ready).
         this._pushThemeToBoard(name)
