@@ -30,6 +30,7 @@ CoordMode "Pixel", "Screen"
 #Include lib\Logger.ahk
 #Include lib\Theme.ahk
 #Include lib\Button.ahk
+#Include lib\ThemedTabList.ahk
 #Include lib\PresetManager.ahk
 #Include lib\Player.ahk
 #Include lib\HotkeyManager.ahk
@@ -741,7 +742,7 @@ class MacroForgeApp {
         this.descEdit.OnEvent("Change", (*) => this._markDirty())
         this._editableCtrls.Push(this.descEdit)
 
-        this.stepList := g.AddListView("xs y+10 w580 h290 Grid", ["#","Type","Summary"])
+        this.stepList := g.AddListView("xs y+10 w580 h290", ["#","Type","Summary"])
         this.stepList.ModifyCol(1, 40)
         this.stepList.ModifyCol(2, 90)
         this.stepList.ModifyCol(3, 440)
@@ -885,6 +886,10 @@ class MacroForgeApp {
                 ThemedButton.Attach(b, role)
             }
         }
+
+        ; Owner-draw the tab strip and the preset list so they match the buttons.
+        try ThemedTab.Attach(this.tabs, ["Steps","Board","Settings","Hotkeys","Log"])
+        try ThemedList.Attach(this.presetList)
     }
 
     ; ======================= THEMING =======================
@@ -944,6 +949,15 @@ class MacroForgeApp {
             this._setCtrlDarkMode(ctrl, dark)
         try this._setCtrlDarkMode(this.tabs, dark)
 
+        ; In dark mode the sunken white client-edge borders look harsh, so we
+        ; drop them (flat dark fields); light mode keeps the classic edge.
+        for ctrl in [this.nameEdit, this.descEdit, this.logBox, this.presetList, this.stepList]
+            this._setClientEdge(ctrl, !dark)
+        for key, ctrl in this.settingsCtrls
+            this._setClientEdge(ctrl, !dark)
+        for key, ctrl in this.hotkeyCtrls
+            this._setClientEdge(ctrl, !dark)
+
         ; Board host background.
         try this.boardContainer.Opt("Background" pal["bg"])
 
@@ -958,6 +972,8 @@ class MacroForgeApp {
 
         ; Repaint owner-drawn buttons so they adopt the new palette.
         try ThemedButton.RefreshAll()
+        try ThemedTab.RefreshAll()
+        try ThemedList.RefreshAll()
 
         ; Keep the board in sync (no-op until the WebView is ready).
         this._pushThemeToBoard(name)
@@ -1002,6 +1018,18 @@ class MacroForgeApp {
             sub := dark ? "DarkMode_Explorer" : ""
             DllCall("uxtheme\SetWindowTheme", "Ptr", ctrl.Hwnd, "Str", sub, "Ptr", 0)
             DllCall("SendMessage", "Ptr", ctrl.Hwnd, "UInt", 0x031A, "Ptr", 0, "Ptr", 0) ; WM_THEMECHANGED
+        }
+    }
+
+    ; Toggle the sunken WS_EX_CLIENTEDGE (0x200) border on a control and force a
+    ; frame repaint. Used to kill the harsh white edges in dark mode.
+    _setClientEdge(ctrl, on) {
+        if !(ctrl is Gui.Control)
+            return
+        try {
+            ctrl.Opt((on ? "+" : "-") "E0x200")
+            DllCall("SetWindowPos", "Ptr", ctrl.Hwnd, "Ptr", 0
+                , "Int", 0, "Int", 0, "Int", 0, "Int", 0, "UInt", 0x37)
         }
     }
 
