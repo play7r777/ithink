@@ -1,0 +1,1434 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>MacroForge Node Board</title>
+<style>
+/* ===== Theme tokens (overridden live by body.light / body.dark) ===== */
+:root{
+  --bg:#12131c;
+  --bg-grid:#23253a;
+  --surface:#1b1d2a;
+  --surface-2:#232637;
+  --surface-3:#2b2f44;
+  --border:#2e3350;
+  --border-soft:#262a40;
+  --text:#e6e9f2;
+  --text-dim:#9aa0b5;
+  --text-faint:#6b7187;
+  --accent:#6c8cff;
+  --accent-soft:rgba(108,140,255,.18);
+  --accent-strong:#8aa2ff;
+  --shadow:rgba(0,0,0,.45);
+  --shadow-strong:rgba(0,0,0,.6);
+  --hdr-action-1:#274690;--hdr-action-2:#1d3568;--hdr-action-tx:#bcd0ff;
+  --hdr-cond-1:#1e7a4d;--hdr-cond-2:#155c39;--hdr-cond-tx:#a6f0c8;
+  --hdr-loop-1:#b9770e;--hdr-loop-2:#8a5806;--hdr-loop-tx:#ffe2a6;
+  --hdr-start-1:#7a3fb0;--hdr-start-2:#5a2c84;--hdr-start-tx:#e6cdff;
+  --conn:#6c8cff;--conn-then:#3fb950;--conn-else:#f85149;--conn-body:#e3b341;
+  --ok:#3fb950;--warn:#e3b341;--danger:#f85149;
+}
+body.light{
+  --bg:#f4f6fb;
+  --bg-grid:#dfe5f1;
+  --surface:#ffffff;
+  --surface-2:#eef1f8;
+  --surface-3:#e3e8f3;
+  --border:#d4dae6;
+  --border-soft:#e4e8f0;
+  --text:#1c2230;
+  --text-dim:#5c6478;
+  --text-faint:#8a91a3;
+  --accent:#2f6bff;
+  --accent-soft:rgba(47,107,255,.14);
+  --accent-strong:#1f54e0;
+  --shadow:rgba(31,45,77,.12);
+  --shadow-strong:rgba(31,45,77,.18);
+  --hdr-action-1:#3f7bd8;--hdr-action-2:#2f6bff;--hdr-action-tx:#ffffff;
+  --hdr-cond-1:#27ae60;--hdr-cond-2:#1e8e4f;--hdr-cond-tx:#ffffff;
+  --hdr-loop-1:#e0961a;--hdr-loop-2:#c47f0e;--hdr-loop-tx:#ffffff;
+  --hdr-start-1:#9b59d0;--hdr-start-2:#7d3fb8;--hdr-start-tx:#ffffff;
+  --conn:#2f6bff;--conn-then:#1e8e3e;--conn-else:#d93025;--conn-body:#b8860b;
+  --ok:#1e8e3e;--warn:#b8860b;--danger:#d93025;
+}
+
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--text);overflow:hidden;user-select:none;transition:background .25s,color .25s}
+#app{display:flex;height:100vh;width:100vw}
+#canvas-wrap{flex:1;position:relative;overflow:hidden;background-color:var(--bg);background-image:radial-gradient(circle, var(--bg-grid) 1.4px, transparent 1.4px);background-size:26px 26px;transition:background-color .25s}
+#canvas-wrap.panning{cursor:grabbing}
+#canvas-wrap.panning *{cursor:grabbing}
+
+#svg-layer{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:1;overflow:visible;transform-origin:0 0}
+#svg-layer path{pointer-events:stroke;stroke-width:2.5;fill:none;cursor:pointer;vector-effect:non-scaling-stroke;transition:stroke-width .1s,filter .1s}
+#svg-layer path:hover{stroke-width:4.5;filter:drop-shadow(0 0 5px var(--accent-soft))}
+#svg-layer path.conn{stroke:var(--conn)}
+#svg-layer path.conn.then{stroke:var(--conn-then)}
+#svg-layer path.conn.else{stroke:var(--conn-else)}
+#svg-layer path.conn.body{stroke:var(--conn-body)}
+#svg-layer path.temp{stroke:var(--text-faint);stroke-dasharray:7,5;pointer-events:none}
+
+#nodes-layer{position:absolute;top:0;left:0;z-index:2;transform-origin:0 0;pointer-events:none}
+#nodes-layer .node{pointer-events:auto}
+.node{position:absolute;min-width:184px;background:var(--surface);border:1px solid var(--border);border-radius:14px;box-shadow:0 6px 22px var(--shadow), 0 1px 0 rgba(255,255,255,.03) inset;cursor:move;transition:box-shadow .16s,border-color .16s,transform .06s;overflow:hidden;backdrop-filter:saturate(1.05)}
+.node:hover{box-shadow:0 10px 30px var(--shadow-strong), 0 0 0 1px var(--accent-soft)}
+.node.selected{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent-soft), 0 12px 32px var(--shadow-strong)}
+#marquee{position:absolute;z-index:50;border:1px solid var(--accent);background:var(--accent-soft);border-radius:4px;pointer-events:none;display:none}
+
+.node-hdr{padding:9px 13px;font-weight:600;font-size:13px;display:flex;align-items:center;gap:6px;letter-spacing:.2px;border-bottom:1px solid rgba(0,0,0,.18)}
+.node-body{padding:9px 13px;font-size:11px;color:var(--text-dim);min-height:24px;background:linear-gradient(180deg, transparent, rgba(0,0,0,.04))}
+.node-body .prop{margin:2px 0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:210px}
+.node.action  .node-hdr{background:linear-gradient(135deg,var(--hdr-action-1),var(--hdr-action-2));color:var(--hdr-action-tx)}
+.node.condition .node-hdr{background:linear-gradient(135deg,var(--hdr-cond-1),var(--hdr-cond-2));color:var(--hdr-cond-tx)}
+.node.loop  .node-hdr{background:linear-gradient(135deg,var(--hdr-loop-1),var(--hdr-loop-2));color:var(--hdr-loop-tx)}
+.node.start .node-hdr{background:linear-gradient(135deg,var(--hdr-start-1),var(--hdr-start-2));color:var(--hdr-start-tx)}
+
+.pin{position:absolute;width:14px;height:14px;border-radius:50%;border:2px solid var(--border);background:var(--surface-3);cursor:crosshair;z-index:3;transition:background .12s,transform .12s,box-shadow .12s}
+.pin:hover{background:var(--accent);border-color:var(--accent);transform:scale(1.35);box-shadow:0 0 8px var(--accent-soft)}
+.pin.input{left:-7px}
+.pin.output{right:-7px}
+.pin.then{background:var(--conn-then);border-color:var(--conn-then)}
+.pin.else{background:var(--conn-else);border-color:var(--conn-else)}
+.pin.body{background:var(--conn-body);border-color:var(--conn-body)}
+.pin-label{position:absolute;font-size:9px;color:var(--text-faint);white-space:nowrap;pointer-events:none}
+.pin-label.in{left:12px}
+.pin-label.out{right:12px}
+
+#sidebar{width:300px;background:var(--surface);border-left:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;transition:background .25s,border-color .25s}
+#sidebar h3{padding:13px 14px;border-bottom:1px solid var(--border);font-size:14px;color:var(--accent-strong);display:flex;align-items:center;justify-content:space-between;font-weight:600}
+#sync-dot{width:9px;height:9px;border-radius:50%;background:var(--ok);transition:background .2s,box-shadow .2s;box-shadow:0 0 6px var(--ok)}
+#sync-dot.saving{background:var(--warn);box-shadow:0 0 10px var(--warn)}
+#prop-panel{flex:1;overflow-y:auto;padding:12px}
+#prop-panel label{display:block;font-size:11px;color:var(--text-dim);margin:9px 0 3px;font-weight:500}
+#prop-panel input,#prop-panel select,#prop-panel textarea{width:100%;padding:7px 9px;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:12px;transition:border-color .12s,box-shadow .12s}
+#prop-panel input:focus,#prop-panel select:focus,#prop-panel textarea:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+#prop-panel textarea{height:60px;resize:vertical}
+#prop-panel .btn-row{display:flex;gap:6px;margin-top:12px}
+.pick-row{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0 4px}
+.pick-btn{flex:1 1 auto;padding:7px 11px;background:var(--accent-soft);border:1px solid var(--accent);border-radius:8px;color:var(--accent-strong);cursor:pointer;font-size:11px;white-space:nowrap;transition:background .12s}
+.pick-btn:hover{background:var(--accent);color:#fff}
+#prop-panel button{padding:7px 13px;background:var(--surface-3);border:1px solid var(--border);border-radius:8px;color:var(--text);cursor:pointer;font-size:11px;transition:background .12s,border-color .12s}
+#prop-panel button:hover{background:var(--accent);border-color:var(--accent);color:#fff}
+
+#toolbar{position:absolute;top:12px;left:12px;display:flex;gap:7px;z-index:10;flex-wrap:wrap}
+#toolbar button{padding:7px 15px;background:var(--surface);border:1px solid var(--border);border-radius:9px;color:var(--text);cursor:pointer;font-size:12px;box-shadow:0 2px 8px var(--shadow);transition:background .12s,border-color .12s,transform .06s}
+#toolbar button:hover{background:var(--accent);border-color:var(--accent);color:#fff;transform:translateY(-1px)}
+#toolbar button:active{transform:translateY(0)}
+
+#ctx-menu{position:absolute;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:5px 0;z-index:100;display:none;min-width:184px;max-height:80vh;overflow-y:auto;box-shadow:0 12px 32px var(--shadow-strong)}
+#ctx-menu .ctx-item{padding:7px 16px;font-size:12px;cursor:pointer;color:var(--text)}
+#ctx-menu .ctx-item:hover{background:var(--accent);color:#fff}
+#ctx-menu .ctx-sep{height:1px;background:var(--border);margin:5px 0}
+#ctx-menu .ctx-header{padding:4px 16px;font-size:10px;color:var(--text-faint);text-transform:uppercase;letter-spacing:.6px}
+
+.zoom-info{position:absolute;bottom:12px;right:312px;background:var(--surface);border:1px solid var(--border-soft);padding:5px 11px;border-radius:8px;font-size:11px;color:var(--text-dim);z-index:5;box-shadow:0 2px 8px var(--shadow)}
+#zoom-controls{position:absolute;bottom:42px;right:312px;display:flex;gap:5px;z-index:5}
+#zoom-controls button{width:30px;height:30px;background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--text);cursor:pointer;font-weight:bold;font-size:15px;line-height:1;box-shadow:0 2px 8px var(--shadow);transition:background .12s,border-color .12s}
+#zoom-controls button:hover{background:var(--accent);border-color:var(--accent);color:#fff}
+#minimap{position:absolute;bottom:12px;left:12px;width:152px;height:102px;background:var(--surface);border:1px solid var(--border);border-radius:10px;z-index:5;overflow:hidden;cursor:crosshair;box-shadow:0 4px 14px var(--shadow)}
+#minimap-nodes{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none}
+#minimap-nodes .m-node{position:absolute;background:var(--accent);opacity:.85;border-radius:2px}
+#minimap-viewport{position:absolute;border:1.5px solid var(--warn);background:rgba(227,179,65,.15);pointer-events:none;box-sizing:border-box;border-radius:2px}
+
+/* Scrollbar polish */
+::-webkit-scrollbar{width:10px;height:10px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--surface-3);border-radius:6px;border:2px solid var(--surface)}
+::-webkit-scrollbar-thumb:hover{background:var(--accent)}
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="canvas-wrap">
+    <div id="toolbar" onmousedown="event.stopPropagation()">
+      <button onclick="openAddMenu(event)">+ Add Node</button>
+      <button onclick="fitView()">Fit View</button>
+      <button onclick="autoLayout()">Auto Layout</button>
+      <button onclick="exportImage('png')" title="Export the whole diagram as a PNG image">Save as PNG</button>
+      <button onclick="exportImage('svg')" title="Export the whole diagram as an SVG vector file">Save as SVG</button>
+      <button onclick="clearAll()">Clear</button>
+      <button onclick="loadFromAHK()">Reload from Steps</button>
+    </div>
+    <svg id="svg-layer"></svg>
+    <div id="nodes-layer"></div>
+    <div id="marquee"></div>
+    <div class="zoom-info" id="zoom-info">100% &middot; Ctrl+Scroll to zoom</div>
+    <div id="zoom-controls">
+      <button onclick="zoomIn()" title="Zoom In">+</button>
+      <button onclick="zoomOut()" title="Zoom Out">-</button>
+    </div>
+    <div id="minimap">
+      <div id="minimap-nodes"></div>
+      <div id="minimap-viewport"></div>
+    </div>
+    <div id="ctx-menu"></div>
+  </div>
+  <div id="sidebar">
+    <h3>Properties <span id="sync-dot" title="Synced with Steps"></span></h3>
+    <div id="prop-panel"><p style="color:var(--text-faint);padding:20px;text-align:center">Select a node to edit properties</p></div>
+  </div>
+</div>
+<script>
+// ===================== STATE =====================
+const state = {
+  nodes: [], connections: [], nextId: 1,
+  pan: {x:0,y:0}, zoom: 1, selectedNode: null,
+  selection: new Set(), // ids of all selected nodes (selectedNode is the primary one)
+  dragging: null, dragOff: {x:0,y:0}, dragGroup: null,
+  panning: false, panStart: {x:0,y:0}, panStartOff: {x:0,y:0},
+  marquee: null, // {x0,y0,x1,y1} in screen coords while marquee-selecting
+  connecting: null, tempLine: null,
+  loadingFromAHK: false   // guard so importing steps does not echo back a save
+};
+
+// ===================== NODE DEFINITIONS =====================
+const NODE_DEFS = {
+  start:  {cat:'start',label:'Start',pins:{in:[],out:['next']}},
+  click:  {cat:'action',label:'Click',pins:{in:['in'],out:['next']},props:{button:'left',count:1,x:'',y:''}},
+  key:    {cat:'action',label:'Key',pins:{in:['in'],out:['next']},props:{key:'',duration:0}},
+  sleep:  {cat:'action',label:'Sleep',pins:{in:['in'],out:['next']},props:{ms:500,jitter:0}},
+  send:   {cat:'action',label:'Send Text',pins:{in:['in'],out:['next']},props:{text:'',mode:'send'}},
+  move:   {cat:'action',label:'Move',pins:{in:['in'],out:['next']},props:{x:'',y:'',speed:2}},
+  drag:   {cat:'action',label:'Drag',pins:{in:['in'],out:['next']},props:{fromX:'',fromY:'',toX:'',toY:'',button:'left',speed:2}},
+  scroll: {cat:'action',label:'Scroll',pins:{in:['in'],out:['next']},props:{direction:'down',amount:3}},
+  keyDown:{cat:'action',label:'Key Down',pins:{in:['in'],out:['next']},props:{key:''}},
+  keyUp:  {cat:'action',label:'Key Up',pins:{in:['in'],out:['next']},props:{key:''}},
+  ifText: {cat:'condition',label:'If Text (OCR)',pins:{in:['in'],out:['then','else','next']},props:{searchText:'',language:'Auto',captureMode:'auto',windowTitle:'',ocrScale:2,ocrX1:'',ocrY1:'',ocrX2:'',ocrY2:''}},
+  ifImage:{cat:'condition',label:'If Image',pins:{in:['in'],out:['then','else','next']},props:{image:'',variation:30,x1:'',y1:'',x2:'',y2:''}},
+  ifPixel:{cat:'condition',label:'If Pixel',pins:{in:['in'],out:['then','else','next']},props:{x:'',y:'',color:'',tolerance:0}},
+  ifVar:  {cat:'condition',label:'If Var',pins:{in:['in'],out:['then','else','next']},props:{varName:'',operator:'=',varValue:''}},
+  ifWindow:{cat:'condition',label:'If Window',pins:{in:['in'],out:['then','else','next']},props:{title:''}},
+  waitForImage:{cat:'condition',label:'Wait For Image',pins:{in:['in'],out:['then','else','next']},props:{image:'',variation:30,x1:'',y1:'',x2:'',y2:'',timeout:10000,poll:200}},
+  waitForPixel:{cat:'condition',label:'Wait For Pixel',pins:{in:['in'],out:['then','else','next']},props:{x:'',y:'',color:'',tolerance:0,timeout:10000,poll:200}},
+  setVar: {cat:'action',label:'Set Var',pins:{in:['in'],out:['next']},props:{varName:'',operator:'=',varValue:'',scope:'local'}},
+  loop:   {cat:'loop',label:'Loop',pins:{in:['in'],out:['body','next']},props:{count:1}},
+  loopWhileImage:{cat:'loop',label:'Loop While Image',pins:{in:['in'],out:['body','next']},props:{image:'',variation:30,x1:'',y1:'',x2:'',y2:''}},
+  loopUntilPixel:{cat:'loop',label:'Loop Until Pixel',pins:{in:['in'],out:['body','next']},props:{x:'',y:'',color:'',tolerance:0}},
+  loopWhileVar:{cat:'loop',label:'Loop While Var',pins:{in:['in'],out:['body','next']},props:{varName:'',operator:'=',varValue:''}},
+  label:  {cat:'action',label:'Label',pins:{in:['in'],out:['next']},props:{name:''}},
+  log:    {cat:'action',label:'Log',pins:{in:['in'],out:['next']},props:{message:''}},
+  call:   {cat:'action',label:'Call Preset',pins:{in:['in'],out:['next']},props:{presetName:''}},
+  break:  {cat:'action',label:'Break',pins:{in:['in'],out:[]},props:{}},
+  stop:   {cat:'action',label:'Stop Macro',pins:{in:['in'],out:[]},props:{}},
+  webhook:{cat:'action',label:'Webhook',pins:{in:['in'],out:['next']},props:{webhookUrl:'',webhookPayload:''}},
+  focusWindow:{cat:'action',label:'Focus Window',pins:{in:['in'],out:['next']},props:{title:''}}
+};
+
+const CAT_CLASS = {action:'action',condition:'condition',loop:'loop',start:'start'};
+const NUM_KEYS = ['count','duration','ms','jitter','amount','variation','tolerance','ocrScale','x','y','fromX','fromY','toX','toY','speed','x1','y1','x2','y2','ocrX1','ocrY1','ocrX2','ocrY2','timeout','poll'];
+
+// ===================== ELEMENTS =====================
+const canvas = document.getElementById('canvas-wrap');
+const svgLayer = document.getElementById('svg-layer');
+const nodesLayer = document.getElementById('nodes-layer');
+const propPanel = document.getElementById('prop-panel');
+const ctxMenu = document.getElementById('ctx-menu');
+const zoomInfo = document.getElementById('zoom-info');
+const syncDot = document.getElementById('sync-dot');
+const minimap = document.getElementById('minimap');
+const minimapNodes = document.getElementById('minimap-nodes');
+const minimapViewport = document.getElementById('minimap-viewport');
+const marqueeEl = document.getElementById('marquee');
+
+function screenToWorld(sx, sy) {
+  // sx, sy are viewport coordinates (e.clientX/clientY or getBoundingClientRect
+  // values). Subtract the canvas origin so pan/zoom are applied in the same
+  // space the SVG and nodes layers are transformed in. This keeps lines aligned
+  // with pins and the cursor at ANY zoom level.
+  const rect = canvas.getBoundingClientRect();
+  return {
+    x: (sx - rect.left - state.pan.x) / state.zoom,
+    y: (sy - rect.top  - state.pan.y) / state.zoom
+  };
+}
+function updateTransform() {
+  nodesLayer.style.transform = `translate(${state.pan.x}px,${state.pan.y}px) scale(${state.zoom})`;
+  svgLayer.style.transform = nodesLayer.style.transform;
+  zoomInfo.textContent = Math.round(state.zoom * 100) + '% \u00B7 ' + state.nodes.length + ' nodes \u00B7 Ctrl+Scroll zoom \u00B7 Scroll pan';
+  renderMinimap();
+}
+let _statusTimer = null;
+function showStatus(msg) {
+  zoomInfo.textContent = msg;
+  if (_statusTimer) clearTimeout(_statusTimer);
+  _statusTimer = setTimeout(() => updateTransform(), 2500);
+}
+
+function doZoom(delta, mx, my) {
+  const newZoom = Math.max(0.15, Math.min(4, state.zoom * delta));
+  state.pan.x = mx - (mx - state.pan.x) * (newZoom / state.zoom);
+  state.pan.y = my - (my - state.pan.y) * (newZoom / state.zoom);
+  state.zoom = newZoom;
+  updateTransform();
+}
+function zoomIn() {
+  const rect = canvas.getBoundingClientRect();
+  doZoom(1.2, rect.width / 2, rect.height / 2);
+}
+function zoomOut() {
+  const rect = canvas.getBoundingClientRect();
+  doZoom(0.8, rect.width / 2, rect.height / 2);
+}
+
+// ===================== MINIMAP =====================
+function renderMinimap() {
+  if (state.nodes.length === 0) {
+    minimapNodes.innerHTML = '';
+    minimapViewport.style.display = 'none';
+    return;
+  }
+  let minX=Infinity,minY=Infinity,maxX=-Infinity,maxY=-Infinity;
+  for (const n of state.nodes) {
+    minX = Math.min(minX, n.x); minY = Math.min(minY, n.y);
+    maxX = Math.max(maxX, n.x + 200); maxY = Math.max(maxY, n.y + 100);
+  }
+  minX -= 300; minY -= 300; maxX += 300; maxY += 300;
+  const w = maxX - minX, h = maxY - minY;
+  const scale = Math.min(150 / w, 100 / h);
+  const offX = (150 - w * scale) / 2, offY = (100 - h * scale) / 2;
+  
+  let html = '';
+  for (const n of state.nodes) {
+    const nx = offX + (n.x - minX) * scale, ny = offY + (n.y - minY) * scale;
+    html += `<div class="m-node" style="left:${nx}px;top:${ny}px;width:${200*scale}px;height:${60*scale}px"></div>`;
+  }
+  minimapNodes.innerHTML = html;
+  
+  minimapViewport.style.display = 'block';
+  const cw = canvas.clientWidth / state.zoom, ch = canvas.clientHeight / state.zoom;
+  const cx = -state.pan.x / state.zoom, cy = -state.pan.y / state.zoom;
+  minimapViewport.style.left = (offX + (cx - minX) * scale) + 'px';
+  minimapViewport.style.top = (offY + (cy - minY) * scale) + 'px';
+  minimapViewport.style.width = (cw * scale) + 'px';
+  minimapViewport.style.height = (ch * scale) + 'px';
+  
+  state.mmScale = scale; state.mmMinX = minX; state.mmMinY = minY; state.mmOffX = offX; state.mmOffY = offY;
+}
+function minimapPanTo(e) {
+  const rect = minimap.getBoundingClientRect();
+  const mx = e.clientX - rect.left, my = e.clientY - rect.top;
+  const wx = (mx - state.mmOffX) / state.mmScale + state.mmMinX;
+  const wy = (my - state.mmOffY) / state.mmScale + state.mmMinY;
+  const cw = canvas.clientWidth / state.zoom, ch = canvas.clientHeight / state.zoom;
+  state.pan.x = -(wx - cw/2) * state.zoom;
+  state.pan.y = -(wy - ch/2) * state.zoom;
+  updateTransform();
+}
+minimap.addEventListener('mousedown', e => {
+  if (e.button !== 0) return;
+  state.minimapPanning = true;
+  minimapPanTo(e);
+  e.preventDefault(); e.stopPropagation();
+});
+
+// ===================== PAN / DRAG / CONNECT =====================
+function isBgTarget(t){ return t===canvas||t===svgLayer||t===nodesLayer||(t&&t.id==="canvas-wrap"); }
+// ===================== MARQUEE SELECTION =====================
+function startMarquee(e) {
+  state.marquee = { x0: e.clientX, y0: e.clientY, x1: e.clientX, y1: e.clientY, additive: e.ctrlKey || e.shiftKey };
+  if (!state.marquee.additive) selectNode(null);
+  marqueeEl.style.display = 'block';
+  updateMarquee(e);
+}
+function updateMarquee(e) {
+  state.marquee.x1 = e.clientX;
+  state.marquee.y1 = e.clientY;
+  const m = state.marquee;
+  const rect = canvas.getBoundingClientRect();
+  const left = Math.min(m.x0, m.x1) - rect.left;
+  const top = Math.min(m.y0, m.y1) - rect.top;
+  marqueeEl.style.left = left + 'px';
+  marqueeEl.style.top = top + 'px';
+  marqueeEl.style.width = Math.abs(m.x1 - m.x0) + 'px';
+  marqueeEl.style.height = Math.abs(m.y1 - m.y0) + 'px';
+}
+function finishMarquee(e) {
+  const m = state.marquee;
+  marqueeEl.style.display = 'none';
+  state.marquee = null;
+  const selLeft = Math.min(m.x0, m.x1), selTop = Math.min(m.y0, m.y1);
+  const selRight = Math.max(m.x0, m.x1), selBottom = Math.max(m.y0, m.y1);
+  // Treat a tiny drag as a plain click on empty space: just clear selection.
+  if (Math.abs(m.x1 - m.x0) < 4 && Math.abs(m.y1 - m.y0) < 4) { if (!m.additive) selectNode(null); return; }
+  const hit = new Set(m.additive ? state.selection : []);
+  for (const n of state.nodes) {
+    const el = document.getElementById('node-' + n.id);
+    if (!el) continue;
+    const r = el.getBoundingClientRect();
+    // Rectangle intersection test in viewport coordinates.
+    if (r.right >= selLeft && r.left <= selRight && r.bottom >= selTop && r.top <= selBottom) hit.add(n.id);
+  }
+  setSelection([...hit]);
+  showStatus(hit.size + ' node' + (hit.size === 1 ? '' : 's') + ' selected');
+}
+canvas.addEventListener('mousedown', e => {
+  // Middle button (or space-less middle drag) always pans.
+  if (e.button === 1) {
+    state.panning = true;
+    state.panStart = {x: e.clientX, y: e.clientY};
+    state.panStartOff = {...state.pan};
+    canvas.classList.add('panning');
+    e.preventDefault();
+    return;
+  }
+  // Left button on empty canvas: pan when Space/Alt held, otherwise marquee-select.
+  if (e.button === 0 && isBgTarget(e.target)) {
+    if (e.altKey) {
+      state.panning = true;
+      state.panStart = {x: e.clientX, y: e.clientY};
+      state.panStartOff = {...state.pan};
+      canvas.classList.add('panning');
+    } else {
+      startMarquee(e);
+    }
+    e.preventDefault();
+  }
+});
+document.addEventListener('mousemove', e => {
+  if (state.panning) {
+    state.pan.x = state.panStartOff.x + (e.clientX - state.panStart.x);
+    state.pan.y = state.panStartOff.y + (e.clientY - state.panStart.y);
+    updateTransform();
+  }
+  if (state.dragging) {
+    const w = screenToWorld(e.clientX, e.clientY);
+    const nx = w.x - state.dragOff.x, ny = w.y - state.dragOff.y;
+    const dx = nx - state.dragging.x, dy = ny - state.dragging.y;
+    // Move every node in the drag group by the same delta.
+    if (state.dragGroup && state.dragGroup.length > 1) {
+      for (const g of state.dragGroup) { g.node.x += dx; g.node.y += dy; renderNode(g.node); }
+    } else {
+      state.dragging.x = nx; state.dragging.y = ny; renderNode(state.dragging);
+    }
+    scheduleConnectionsAndMinimap();
+  }
+  if (state.marquee) updateMarquee(e);
+  if (state.connecting) updateTempLine(e);
+  if (state.minimapPanning) minimapPanTo(e);
+});
+document.addEventListener('mouseup', e => {
+  if (state.panning) { state.panning = false; canvas.classList.remove('panning'); }
+  if (state.dragging) {
+    state.dragging = null; state.dragGroup = null;
+    // Cancel any pending throttled frame and do one final exact redraw.
+    if (_drawRaf) { cancelAnimationFrame(_drawRaf); _drawRaf = 0; }
+    renderConnections(); renderMinimap();
+    pushHistory();
+  }
+  if (state.marquee) finishMarquee(e);
+  if (state.connecting) { finishConnection(e); }
+  if (state.minimapPanning) state.minimapPanning = false;
+});
+
+canvas.addEventListener('wheel', e => {
+  e.preventDefault();
+  if (e.ctrlKey) {
+    const delta = e.deltaY > 0 ? 0.9 : 1.1;
+    const rect = canvas.getBoundingClientRect();
+    doZoom(delta, e.clientX - rect.left, e.clientY - rect.top);
+  } else {
+    state.pan.x -= e.deltaX;
+    state.pan.y -= e.deltaY;
+    updateTransform();
+  }
+}, {passive: false});
+
+// ===================== NODE CRUD =====================
+function addNode(type, x, y, silent) {
+  const def = NODE_DEFS[type];
+  if (!def) return null;
+  const node = { id: state.nextId++, type, x, y, data: JSON.parse(JSON.stringify(def.props || {})) };
+  state.nodes.push(node);
+  renderNode(node);
+  if (!silent) { selectNode(node); scheduleSave(); }
+  return node;
+}
+function removeNode(node) {
+  if (node.type === 'start') { showStatus('Cannot delete the Start node'); return; }
+  state.connections = state.connections.filter(c => c.from !== node.id && c.to !== node.id);
+  state.nodes = state.nodes.filter(n => n.id !== node.id);
+  const el = document.getElementById('node-' + node.id);
+  if (el) el.remove();
+  if (state.selection) state.selection.delete(node.id);
+  if (state.selectedNode === node) { state.selectedNode = null; renderPropPanel(); }
+  renderConnections();
+  renderMinimap();
+  scheduleSave();
+}
+function applySelectionClasses() {
+  document.querySelectorAll('.node.selected').forEach(el => el.classList.remove('selected'));
+  state.selection.forEach(id => {
+    const el = document.getElementById('node-' + id);
+    if (el) el.classList.add('selected');
+  });
+}
+function selectNode(node) {
+  state.selection = new Set(node ? [node.id] : []);
+  state.selectedNode = node || null;
+  applySelectionClasses();
+  renderPropPanel();
+}
+function toggleNodeSelection(node) {
+  if (!node) return;
+  if (state.selection.has(node.id)) {
+    state.selection.delete(node.id);
+    if (state.selectedNode && state.selectedNode.id === node.id) {
+      const firstId = state.selection.values().next().value;
+      state.selectedNode = firstId ? state.nodes.find(n => n.id === firstId) : null;
+    }
+  } else {
+    state.selection.add(node.id);
+    state.selectedNode = node;
+  }
+  applySelectionClasses();
+  renderPropPanel();
+}
+function setSelection(ids) {
+  state.selection = new Set(ids);
+  const firstId = state.selection.values().next().value;
+  state.selectedNode = firstId ? state.nodes.find(n => n.id === firstId) : null;
+  applySelectionClasses();
+  renderPropPanel();
+}
+function selectedNodes() { return state.nodes.filter(n => state.selection.has(n.id)); }
+
+
+// ===================== RENDER NODE =====================
+function renderNode(node) {
+  const def = NODE_DEFS[node.type];
+  let el = document.getElementById('node-' + node.id);
+  if (!el) {
+    el = document.createElement('div');
+    el.id = 'node-' + node.id;
+    el.className = 'node ' + CAT_CLASS[def.cat];
+    el.addEventListener('mousedown', e => {
+      if (e.target.classList.contains('pin')) return;
+      if (e.button !== 0) return;
+      // Ctrl/Shift+click toggles selection without starting a drag.
+      if (e.ctrlKey || e.shiftKey) { toggleNodeSelection(node); e.stopPropagation(); return; }
+      // Clicking an unselected node selects only it. Clicking an already-
+      // selected node keeps the whole group so it can be dragged together.
+      if (!state.selection.has(node.id)) selectNode(node);
+      else { state.selectedNode = node; renderPropPanel(); }
+      const w = screenToWorld(e.clientX, e.clientY);
+      state.dragging = node;
+      state.dragOff = { x: w.x - node.x, y: w.y - node.y };
+      // Snapshot start positions of every selected node for group drag.
+      state.dragGroup = selectedNodes().map(n => ({ node: n, ox: n.x, oy: n.y }));
+      e.stopPropagation();
+    });
+    el.addEventListener('contextmenu', e => { e.preventDefault(); e.stopPropagation(); selectNode(node); showCtxMenu(e.clientX, e.clientY, screenToWorld(e.clientX, e.clientY)); });
+    nodesLayer.appendChild(el);
+  }
+  el.style.left = node.x + 'px';
+  el.style.top = node.y + 'px';
+  el.innerHTML = `<div class="node-hdr"><span>${def.label}</span><span style="margin-left:auto;font-size:10px;opacity:.5">#${node.id}</span></div><div class="node-body">${getNodeSummary(node)}</div>`;
+  const pinSize = 14, hdrH = 34;
+  const bodyH = el.querySelector('.node-body').offsetHeight || 24;
+  const totalH = hdrH + bodyH;
+  
+  let outPins = [...def.pins.out];
+  if (def.cat === 'condition' && node.data.conditions && node.data.conditions.length > 0) {
+    outPins = [];
+    for (let i = 0; i < node.data.conditions.length; i++) {
+      outPins.push('cond' + i);
+    }
+    outPins.push('else');
+    outPins.push('next');
+  }
+
+  def.pins.in.forEach(name => {
+    const py = hdrH + (totalH - hdrH) / 2 - pinSize / 2;
+    const pin = mkPin('input', name, node.id, py);
+    el.appendChild(pin.pin); el.appendChild(pin.lbl);
+  });
+  outPins.forEach((name, i) => {
+    const cnt = outPins.length;
+    const py = hdrH + (i + 1) * (totalH - hdrH) / (cnt + 1) - pinSize / 2;
+    const extra = (name === 'then' || name.startsWith('cond')) ? ' then' : name === 'else' ? ' else' : name === 'body' ? ' body' : '';
+    const pin = mkPin('output' + extra, name, node.id, py);
+    el.appendChild(pin.pin); el.appendChild(pin.lbl);
+  });
+}
+function mkPin(cls, name, nodeId, py) {
+  const pin = document.createElement('div');
+  pin.className = 'pin ' + cls;
+  pin.style.top = py + 'px';
+  pin.dataset.nodeId = nodeId;
+  pin.dataset.pinName = name;
+  pin.dataset.pinDir = cls.startsWith('input') ? 'input' : 'output';
+  const node = state.nodes.find(n => n.id === nodeId);
+  pin.addEventListener('mousedown', e => { startConnection(node, name, pin.dataset.pinDir, e); e.stopPropagation(); });
+  const lbl = document.createElement('span');
+  lbl.className = 'pin-label ' + (pin.dataset.pinDir === 'input' ? 'in' : 'out');
+  lbl.style.top = (py + 2) + 'px';
+  lbl.textContent = name;
+  return {pin, lbl};
+}
+function getNodeSummary(node) {
+  const d = node.data;
+  if (d.conditions && d.conditions.length > 0) {
+      return `[ ${d.conditions.length} conditions ]`;
+  }
+  switch (node.type) {
+    case 'start': return '';
+    case 'click': return `${d.button||'left'} @(${d.x||'?'},${d.y||'?'}) x${d.count||1}`;
+    case 'key': return `${d.key||'?'} ${d.duration>0?'hold '+d.duration+'ms':'tap'}`;
+    case 'sleep': return `${d.ms||500}ms` + (d.jitter>0?` \u00B1${d.jitter}%`:'');
+    case 'send': return `"${(d.text||'').substring(0,20)}"`;
+    case 'move': return `(${d.x||'?'},${d.y||'?'})`;
+    case 'drag': return `(${d.fromX||'?'},${d.fromY||'?'}) \u2192 (${d.toX||'?'},${d.toY||'?'})`;
+    case 'scroll': return `${d.direction||'down'} x${d.amount||3}`;
+    case 'keyDown': return `\u2193 ${d.key||'?'}`;
+    case 'keyUp': return `\u2191 ${d.key||'?'}`;
+    case 'ifText': return `"${d.searchText||'?'}" [${d.language||'Auto'}]`;
+    case 'ifImage': return d.image||'?';
+    case 'ifPixel': return `(${d.x||'?'},${d.y||'?'}) = ${d.color||'?'}`;
+    case 'ifVar': return `${d.varName||'?'} ${d.operator||'='} ${d.varValue||'?'}`;
+    case 'ifWindow': return `"${d.title||'?'}"`;
+    case 'setVar': return `${d.varName||'?'} ${d.operator||'='} ${d.varValue||'?'}`;
+    case 'loop': return `x${d.count||1}`;
+    case 'loopWhileImage': return d.image||'?';
+    case 'loopUntilPixel': return `(${d.x||'?'},${d.y||'?'}) = ${d.color||'?'}`;
+    case 'loopWhileVar': return `${d.varName||'?'} ${d.operator||'='} ${d.varValue||'?'}`;
+    case 'label': return d.name||'';
+    case 'log': return d.message||'';
+    case 'webhook': return (d.webhookUrl||'').substring(0,25);
+    case 'focusWindow': return d.title||'';
+    case 'waitForImage': return (d.image||'img') + ' t' + (d.timeout||10000) + 'ms';
+    case 'waitForPixel': return '(' + (d.x||'x') + ',' + (d.y||'y') + ') ' + (d.color||'clr');
+    case 'call': return d.presetName||'preset';
+    case 'break': return 'break loop';
+    default: return '';
+  }
+}
+
+// ===================== CONNECTIONS =====================
+function startConnection(node, pinName, pinDir, e) {
+  state.connecting = { node, pinName, pinDir };
+  // Store the start point in WORLD coordinates so it lives in the same space
+  // as the transformed SVG layer (which is scaled and panned like the nodes).
+  const r = e.target.getBoundingClientRect();
+  const wpt = screenToWorld(r.left + r.width / 2, r.top + r.height / 2);
+  state.connecting.sx = wpt.x;
+  state.connecting.sy = wpt.y;
+  const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+  path.classList.add("temp");
+  svgLayer.appendChild(path);
+  state.tempLine = path;
+}
+function updateTempLine(e) {
+  if (!state.tempLine) return;
+  // Convert the cursor position into WORLD coordinates to match the start
+  // point and the transformed SVG layer, so the line tracks the cursor exactly.
+  const cur = screenToWorld(e.clientX, e.clientY);
+  const s = state.connecting;
+  const [x1,y1,x2,y2] = s.pinDir === "output" ? [s.sx, s.sy, cur.x, cur.y] : [cur.x, cur.y, s.sx, s.sy];
+  state.tempLine.setAttribute("d", bezier(x1,y1,x2,y2));
+}
+function finishConnection(e) {
+  if (!state.connecting) return;
+  const s = state.connecting;
+  if (state.tempLine) { state.tempLine.remove(); state.tempLine = null; }
+  const target = document.elementFromPoint(e.clientX, e.clientY);
+  if (target && target.classList.contains('pin')) {
+    const tNodeId = parseInt(target.dataset.nodeId);
+    const tPinName = target.dataset.pinName;
+    const tPinDir = target.dataset.pinDir;
+    if (tNodeId !== s.node.id && tPinDir !== s.pinDir) {
+      let fromId, fromPin, toId, toPin;
+      if (s.pinDir === 'output') { fromId = s.node.id; fromPin = s.pinName; toId = tNodeId; toPin = tPinName; }
+      else { fromId = tNodeId; fromPin = tPinName; toId = s.node.id; toPin = s.pinName; }
+      // One connection per output pin and per input pin.
+      state.connections = state.connections.filter(c => !(c.to === toId && c.toPin === toPin) && !(c.from === fromId && c.fromPin === fromPin));
+      state.connections.push({from: fromId, fromPin, to: toId, toPin});
+      renderConnections();
+      scheduleSave();
+    }
+  }
+  state.connecting = null;
+}
+function bezier(x1,y1,x2,y2) {
+  const dx = Math.abs(x2-x1) * 0.5;
+  return `M${x1},${y1} C${x1+dx},${y1} ${x2-dx},${y2} ${x2},${y2}`;
+}
+function getPinPos(nodeId, pinName, pinDir) {
+  const el = document.getElementById('node-' + nodeId);
+  if (!el) return null;
+  for (const p of el.querySelectorAll(`.pin.${pinDir}`)) {
+    if (p.dataset.pinName === pinName) {
+      // Return the pin centre in WORLD coordinates so connection paths render
+      // correctly inside the transformed SVG layer at any zoom or pan.
+      const r = p.getBoundingClientRect();
+      return screenToWorld(r.left + r.width / 2, r.top + r.height / 2);
+    }
+  }
+  return null;
+}
+// During a drag we can fire dozens of mousemove events per frame. Rebuilding
+// all SVG paths + the minimap on each one is wasteful (full innerHTML/SVG
+// recreation). Coalesce those heavy redraws to at most one per animation
+// frame via requestAnimationFrame; node transforms still update instantly.
+let _drawRaf = 0;
+function scheduleConnectionsAndMinimap() {
+  if (_drawRaf) return;
+  _drawRaf = requestAnimationFrame(() => {
+    _drawRaf = 0;
+    renderConnections();
+    renderMinimap();
+  });
+}
+
+function renderConnections() {
+  svgLayer.querySelectorAll('path.conn').forEach(p => p.remove());
+  for (const c of state.connections) {
+    const from = getPinPos(c.from, c.fromPin, 'output');
+    const to = getPinPos(c.to, c.toPin, 'input');
+    if (!from || !to) continue;
+    const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    path.classList.add('conn');
+    if (c.fromPin === 'then' || c.fromPin.startsWith('cond')) path.classList.add('then');
+    else if (c.fromPin === 'else') path.classList.add('else');
+    else if (c.fromPin === 'body') path.classList.add('body');
+    path.setAttribute('d', bezier(from.x, from.y, to.x, to.y));
+    path.addEventListener('dblclick', () => {
+      state.connections = state.connections.filter(x => x !== c);
+      renderConnections(); scheduleSave();
+    });
+    svgLayer.appendChild(path);
+  }
+}
+
+// ===================== EXPORT DIAGRAM AS IMAGE =====================
+// Builds a standalone SVG of the whole graph (independent of current zoom/pan)
+// by reading each rendered node's world position + size and re-emitting the
+// connection beziers. PNG export rasterizes that SVG through an offscreen
+// canvas. Works fully client-side so users can share their algorithms.
+function cssVar(name, fallback) {
+  const v = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+  return v || fallback;
+}
+function escapeXml(str) {
+  return String(str).replace(/[<>&"']/g, c => ({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;',"'":'&apos;'}[c]));
+}
+function buildDiagramSvg() {
+  if (state.nodes.length === 0) return null;
+  const PAD = 40, HDR_H = 34;
+  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+  const boxes = [];
+  for (const node of state.nodes) {
+    const el = document.getElementById('node-' + node.id);
+    if (!el) continue;
+    const w = el.offsetWidth, h = el.offsetHeight;
+    boxes.push({ node, x: node.x, y: node.y, w, h });
+    minX = Math.min(minX, node.x); minY = Math.min(minY, node.y);
+    maxX = Math.max(maxX, node.x + w); maxY = Math.max(maxY, node.y + h);
+  }
+  if (!isFinite(minX)) return null;
+  const ox = PAD - minX, oy = PAD - minY;
+  const W = (maxX - minX) + PAD * 2, H = (maxY - minY) + PAD * 2;
+  let parts = [];
+  parts.push(`<svg xmlns="http://www.w3.org/2000/svg" width="${Math.ceil(W)}" height="${Math.ceil(H)}" viewBox="0 0 ${Math.ceil(W)} ${Math.ceil(H)}" font-family="Segoe UI, sans-serif">`);
+  const C = {
+    bg: cssVar('--bg', '#12131c'),
+    surface: cssVar('--surface', '#1b1d2a'),
+    border: cssVar('--border', '#2e3350'),
+    textDim: cssVar('--text-dim', '#9aa0b5'),
+    textFaint: cssVar('--text-faint', '#6b7187'),
+    conn: cssVar('--conn', '#6c8cff'),
+    connThen: cssVar('--conn-then', '#3fb950'),
+    connElse: cssVar('--conn-else', '#f85149'),
+    connBody: cssVar('--conn-body', '#e3b341'),
+    hAction1: cssVar('--hdr-action-1', '#274690'), hActionTx: cssVar('--hdr-action-tx', '#bcd0ff'),
+    hCond1: cssVar('--hdr-cond-1', '#1e7a4d'), hCondTx: cssVar('--hdr-cond-tx', '#a6f0c8'),
+    hLoop1: cssVar('--hdr-loop-1', '#b9770e'), hLoopTx: cssVar('--hdr-loop-tx', '#ffe2a6'),
+    hStart1: cssVar('--hdr-start-1', '#7a3fb0'), hStartTx: cssVar('--hdr-start-tx', '#e6cdff')
+  };
+  const HDR_FILL = { action:C.hAction1, condition:C.hCond1, loop:C.hLoop1, start:C.hStart1 };
+  const HDR_TEXT = { action:C.hActionTx, condition:C.hCondTx, loop:C.hLoopTx, start:C.hStartTx };
+  parts.push(`<rect x="0" y="0" width="${Math.ceil(W)}" height="${Math.ceil(H)}" fill="${C.bg}"/>`);
+  // Connections first (drawn under nodes), in world coords + offset.
+  for (const c of state.connections) {
+    const from = getPinPos(c.from, c.fromPin, 'output');
+    const to = getPinPos(c.to, c.toPin, 'input');
+    if (!from || !to) continue;
+    let stroke = C.conn;
+    if (c.fromPin === 'then' || c.fromPin.startsWith('cond')) stroke = C.connThen;
+    else if (c.fromPin === 'else') stroke = C.connElse;
+    else if (c.fromPin === 'body') stroke = C.connBody;
+    const dx = Math.abs((to.x) - (from.x)) * 0.5;
+    const x1 = from.x + ox, y1 = from.y + oy, x2 = to.x + ox, y2 = to.y + oy;
+    parts.push(`<path d="M${x1},${y1} C${x1+dx},${y1} ${x2-dx},${y2} ${x2},${y2}" fill="none" stroke="${stroke}" stroke-width="3"/>`);
+  }
+  // Nodes.
+  for (const b of boxes) {
+    const def = NODE_DEFS[b.node.type];
+    const cat = def.cat;
+    const x = b.x + ox, y = b.y + oy;
+    parts.push(`<g>`);
+    parts.push(`<rect x="${x}" y="${y}" width="${b.w}" height="${b.h}" rx="14" fill="${C.surface}" stroke="${C.border}" stroke-width="1.5"/>`);
+    parts.push(`<path d="M${x},${y+HDR_H} L${x},${y+13} Q${x},${y} ${x+13},${y} L${x+b.w-13},${y} Q${x+b.w},${y} ${x+b.w},${y+13} L${x+b.w},${y+HDR_H} Z" fill="${HDR_FILL[cat]||C.hAction1}"/>`);
+    parts.push(`<text x="${x+13}" y="${y+22}" fill="${HDR_TEXT[cat]||C.hActionTx}" font-size="13" font-weight="600">${escapeXml(def.label)}</text>`);
+    parts.push(`<text x="${x+b.w-13}" y="${y+21}" fill="${C.textFaint}" font-size="10" text-anchor="end">#${b.node.id}</text>`);
+    // Body summary lines.
+    const summary = getNodeSummary(b.node).replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+    if (summary) {
+      const maxChars = Math.floor((b.w - 24) / 6);
+      const words = summary.split(' ');
+      let line = '', lineNo = 0;
+      const flush = () => { if (line) { parts.push(`<text x="${x+13}" y="${y+HDR_H+16+lineNo*14}" fill="${C.textDim}" font-size="11">${escapeXml(line)}</text>`); lineNo++; line=''; } };
+      for (const wd of words) {
+        if ((line + ' ' + wd).trim().length > maxChars) { flush(); }
+        line = (line ? line + ' ' : '') + wd;
+        if (lineNo > 6) break;
+      }
+      flush();
+    }
+    parts.push(`</g>`);
+  }
+  parts.push(`</svg>`);
+  return { svg: parts.join('\n'), w: Math.ceil(W), h: Math.ceil(H) };
+}
+function downloadBlob(blob, filename) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click();
+  setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(url); }, 100);
+}
+function exportImage(format) {
+  const out = buildDiagramSvg();
+  if (!out) { alert('Nothing to export — the board is empty.'); return; }
+  const stamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+  if (format === 'svg') {
+    downloadBlob(new Blob([out.svg], { type: 'image/svg+xml' }), `macroforge-schema-${stamp}.svg`);
+    return;
+  }
+  // PNG: render the SVG onto a 2x canvas for crisp output, then export.
+  const scale = 2;
+  const img = new Image();
+  const svgBlob = new Blob([out.svg], { type: 'image/svg+xml;charset=utf-8' });
+  const url = URL.createObjectURL(svgBlob);
+  img.onload = () => {
+    const cv = document.createElement('canvas');
+    cv.width = out.w * scale; cv.height = out.h * scale;
+    const ctx = cv.getContext('2d');
+    ctx.scale(scale, scale);
+    ctx.drawImage(img, 0, 0);
+    URL.revokeObjectURL(url);
+    cv.toBlob(b => downloadBlob(b, `macroforge-schema-${stamp}.png`), 'image/png');
+  };
+  img.onerror = () => { URL.revokeObjectURL(url); alert('PNG export failed; try Save as SVG instead.'); };
+  img.src = url;
+}
+
+// ===================== CONTEXT MENU =====================
+canvas.addEventListener('contextmenu', e => {
+  e.preventDefault();
+  showCtxMenu(e.clientX, e.clientY, screenToWorld(e.clientX, e.clientY));
+});
+canvas.addEventListener('click', () => hideCtxMenu());
+function showCtxMenu(x, y, worldPos) {
+  ctxMenu.innerHTML = '';
+  const cats = {start:[], action:[], condition:[], loop:[]};
+  for (const [k,v] of Object.entries(NODE_DEFS)) cats[v.cat].push(k);
+  for (const [cat, types] of Object.entries(cats)) {
+    if (cat === 'start' || types.length === 0) continue;
+    addCtxHeader(cat.toUpperCase());
+    for (const t of types) addCtxItem(NODE_DEFS[t].label, () => { addNode(t, worldPos.x, worldPos.y); hideCtxMenu(); });
+    addCtxSep();
+  }
+  if (state.selectedNode && state.selectedNode.type !== 'start') {
+    if (NODE_DEFS[state.selectedNode.type].cat === 'condition') {
+      addCtxItem('Add Condition', () => { addConditionToNodeId(state.selectedNode.id); hideCtxMenu(); });
+    }
+    addCtxItem('Delete Node', () => { removeNode(state.selectedNode); hideCtxMenu(); });
+    addCtxItem('Duplicate', () => { duplicateSelected(); hideCtxMenu(); });
+  }
+  ctxMenu.style.display = 'block';
+  // Clamp inside the viewport so the menu is never cut off.
+  const mw = ctxMenu.offsetWidth, mh = ctxMenu.offsetHeight;
+  ctxMenu.style.left = Math.min(x, window.innerWidth - mw - 8) + 'px';
+  ctxMenu.style.top = Math.min(y, window.innerHeight - mh - 8) + 'px';
+}
+function openAddMenu(evt) {
+  evt.stopPropagation();
+  const rect = canvas.getBoundingClientRect();
+  showCtxMenu(60, 50, screenToWorld(rect.left + rect.width / 2, rect.top + rect.height / 2));
+}
+function hideCtxMenu() { ctxMenu.style.display = 'none'; }
+function addCtxItem(label, onClick) { const d = document.createElement('div'); d.className='ctx-item'; d.textContent=label; d.addEventListener('click', onClick); ctxMenu.appendChild(d); }
+function addCtxHeader(t) { const d = document.createElement('div'); d.className='ctx-header'; d.textContent=t; ctxMenu.appendChild(d); }
+function addCtxSep() { const d = document.createElement('div'); d.className='ctx-sep'; ctxMenu.appendChild(d); }
+
+// ===================== PROPERTY PANEL =====================
+// ===================== PICK BRIDGE (AHK native pickers) =====================
+const PICK_DEFS = {
+  click:          [{kind:'xy',    label:'?? Pick XY'}],
+  move:           [{kind:'xy',    label:'?? Pick XY'}],
+  drag:           [{kind:'xy2',   label:'?? Pick Start', fields:{x:'fromX',y:'fromY'}}, {kind:'xy2', label:'?? Pick End', fields:{x:'toX',y:'toY'}}],
+  key:            [{kind:'key',   label:'?? Pick Key'}],
+  keyDown:        [{kind:'key',   label:'?? Pick Key'}],
+  keyUp:          [{kind:'key',   label:'?? Pick Key'}],
+  ifPixel:        [{kind:'pixel', label:'?? Pick Pixel+XY'}],
+  waitForPixel:   [{kind:'pixel', label:'?? Pick Pixel+XY'}],
+  loopUntilPixel: [{kind:'pixel', label:'?? Pick Pixel+XY'}],
+  ifImage:        [{kind:'browse',label:'Browse Image...'}, {kind:'region', label:'?? Pick Region'}],
+  waitForImage:   [{kind:'browse',label:'Browse Image...'}, {kind:'region', label:'?? Pick Region'}],
+  loopWhileImage: [{kind:'browse',label:'Browse Image...'}, {kind:'region', label:'?? Pick Region'}],
+  ifText:         [{kind:'windowOcr', label:'?? Pick Window'}, {kind:'ocrRegion', label:'?? Pick OCR Region'}],
+  ifWindow:       [{kind:'window', label:'?? Pick Window'}],
+  focusWindow:    [{kind:'window', label:'?? Pick Window'}]
+};
+let _pendingPick = null;
+function requestPick(node, pick, condIdx) {
+  _pendingPick = { nodeId: node.id, pick, condIdx };
+  postToAHK({action:'pick', kind:pick.kind});
+  showStatus('Picking: ' + pick.label + ' ... follow on-screen prompt');
+}
+function applyPickResult(res) {
+  if (!_pendingPick) return;
+  const node = state.nodes.find(n => n.id === _pendingPick.nodeId);
+  const pick = _pendingPick.pick;
+  const condIdx = _pendingPick.condIdx;
+  _pendingPick = null;
+  if (!node || !res || res.cancelled) { showStatus('Pick cancelled'); return; }
+  const d = (condIdx !== undefined && node.data.conditions) ? node.data.conditions[condIdx] : node.data;
+  switch (pick.kind) {
+    case 'xy': if (res.x!=null) d.x = res.x; if (res.y!=null) d.y = res.y; break;
+    case 'xy2': if (res.x!=null) d[pick.fields.x] = res.x; if (res.y!=null) d[pick.fields.y] = res.y; break;
+    case 'pixel': if (res.x!=null) d.x = res.x; if (res.y!=null) d.y = res.y; if (res.color!=null) d.color = res.color; break;
+    case 'key': if (res.key!=null) d.key = res.key; break;
+    case 'window': if (res.title!=null) d.title = res.title; break;
+    case 'windowOcr': if (res.title!=null) d.windowTitle = res.title; break;
+    case 'region': if (res.x1!=null){d.x1=res.x1;d.y1=res.y1;d.x2=res.x2;d.y2=res.y2;} break;
+    case 'ocrRegion': if (res.x1!=null){d.ocrX1=res.x1;d.ocrY1=res.y1;d.ocrX2=res.x2;d.ocrY2=res.y2;} break;
+    case 'browse': if (res.image!=null) d.image = res.image; break;
+  }
+  if (state.selectedNode === node) renderPropPanel();
+  renderNode(node); renderConnections(); scheduleSave();
+  showStatus('Pick applied');
+}
+
+function renderPropPanel() {
+  const node = state.selectedNode;
+  if (!node) { propPanel.innerHTML = '<p style="color:var(--text-faint);padding:20px;text-align:center">Select a node to edit properties</p>'; return; }
+  const def = NODE_DEFS[node.type];
+  let html = `<div style="font-weight:600;margin-bottom:8px;color:var(--accent-strong)">${def.label} #${node.id}</div>`;
+  if (node.type === 'start') html += '<p style="color:var(--text-dim);font-size:11px">Entry point. Connect its "next" pin to the first action.</p>';
+  const picks = PICK_DEFS[node.type] || [];
+  if (def.cat === 'condition' && node.data.conditions && node.data.conditions.length > 0) {
+    html += `<div style="margin:10px 0;color:var(--text);font-weight:bold;">Conditions</div>`;
+    node.data.conditions.forEach((cond, idx) => {
+      html += `<div style="padding:6px; background:var(--surface-2); border:1px solid var(--border); margin-bottom:8px; border-radius:6px;">`;
+      html += `<div style="display:flex; justify-content:space-between; margin-bottom:6px;"><b>Cond ${idx}</b> <button style="padding:2px 6px" onclick="window.removeCondition(${node.id}, ${idx})">X</button></div>`;
+      if (picks.length) {
+        html += '<div class="pick-row">' + picks.map((p,i) => `<button class="pick-btn" data-cond="${idx}" data-pick="${i}">${p.label}</button>`).join('') + '</div>';
+      }
+      for (const [key, val] of Object.entries(cond)) {
+        if (key === 'thenSteps') continue;
+        html += `<label>${key}</label>`;
+        if (['button','mode','direction','operator','scope','language','captureMode'].includes(key)) {
+          const opts = {button:['left','right','middle'],mode:['send','sendText','sendInput'],direction:['up','down'],operator:['=','+=','-=','!=','<','>','<=','>='],scope:['local','global'],language:['Auto','eng','ru','ua'],captureMode:['auto','desktop','dx','window']};
+          html += `<select data-cond="${idx}" data-key="${key}">${(opts[key]||[]).map(o=>`<option${o===val?' selected':''}>${o}</option>`).join('')}</select>`;
+        } else {
+          html += `<input data-cond="${idx}" data-key="${key}" />`;
+        }
+      }
+      html += `</div>`;
+    });
+    html += `<button onclick="window.addConditionToNodeId(${node.id})" style="width:100%; margin-bottom:10px;">+ Add Condition</button>`;
+  } else {
+    if (picks.length) {
+      html += '<div class="pick-row">' + picks.map(function(p,i){ return '<button class="pick-btn" data-pick="'+i+'">'+p.label+'</button>'; }).join('') + '</div>';
+    }
+    for (const [key, val] of Object.entries(node.data)) {
+      html += `<label>${key}</label>`;
+      if (key === 'text' || key === 'message' || key === 'webhookPayload') {
+        html += `<textarea data-key="${key}"></textarea>`;
+      } else if (['button','mode','direction','operator','scope','language','captureMode'].includes(key)) {
+        const opts = {button:['left','right','middle'],mode:['send','sendText','sendInput'],direction:['up','down'],operator:['=','+=','-=','!=','<','>','<=','>='],scope:['local','global'],language:['Auto','eng','ru','ua'],captureMode:['auto','desktop','dx','window']};
+        html += `<select data-key="${key}">${(opts[key]||[]).map(o=>`<option${o===val?' selected':''}>${o}</option>`).join('')}</select>`;
+      } else {
+        html += `<input data-key="${key}" />`;
+      }
+    }
+  }
+
+  if (node.type !== 'start') html += `<div class="btn-row"><button onclick="deleteSelected()">Delete</button><button onclick="duplicateSelected()">Duplicate</button></div>`;
+  propPanel.innerHTML = html;
+  propPanel.querySelectorAll('.pick-btn').forEach(function(btn){
+    btn.addEventListener('click', function(){ 
+      const condIdx = btn.dataset.cond !== undefined ? parseInt(btn.dataset.cond) : undefined;
+      requestPick(node, picks[Number(btn.dataset.pick)], condIdx); 
+    });
+  });
+  propPanel.querySelectorAll('input,select,textarea').forEach(el => {
+    const k = el.dataset.key;
+    const cIdx = el.dataset.cond;
+    if (cIdx !== undefined) el.value = node.data.conditions[cIdx][k] ?? '';
+    else el.value = node.data[k] ?? '';
+    
+    el.addEventListener('input', () => {
+      let v = el.value;
+      if (NUM_KEYS.includes(k)) v = v === '' ? '' : Number(v);
+      if (cIdx !== undefined) node.data.conditions[cIdx][k] = v;
+      else node.data[k] = v;
+      renderNode(node);
+      renderConnections();
+      scheduleSave();
+    });
+  });
+}
+
+window.removeCondition = function(nodeId, idx) {
+    const node = state.nodes.find(n => n.id === nodeId);
+    if (!node || !node.data.conditions) return;
+    node.data.conditions.splice(idx, 1);
+    if (node.data.conditions.length === 0) delete node.data.conditions;
+    
+    state.connections = state.connections.filter(c => !(c.from === nodeId && c.fromPin === 'cond' + idx));
+    state.connections.forEach(c => {
+        if (c.from === nodeId && c.fromPin.startsWith('cond')) {
+            const curIdx = parseInt(c.fromPin.substring(4));
+            if (curIdx > idx) c.fromPin = 'cond' + (curIdx - 1);
+        }
+    });
+    renderNode(node);
+    renderConnections();
+    selectNode(node);
+    scheduleSave();
+};
+
+window.addConditionToNodeId = function(nodeId) {
+    const node = state.nodes.find(n => n.id === nodeId);
+    if (!node) return;
+    if (!node.data.conditions) {
+        const c0 = {...node.data};
+        node.data.conditions = [c0, {...c0}];
+        state.connections.forEach(c => {
+            if (c.from === node.id && c.fromPin === 'then') c.fromPin = 'cond0';
+        });
+    } else {
+        node.data.conditions.push({...node.data.conditions[node.data.conditions.length-1]});
+    }
+    renderNode(node);
+    renderConnections();
+    selectNode(node);
+    scheduleSave();
+};
+function deleteSelected() {
+  // Delete every selected node (Start is skipped by removeNode).
+  const victims = selectedNodes().filter(n => n.type !== 'start');
+  if (victims.length === 0) return;
+  for (const n of victims) removeNode(n);
+  selectNode(null);
+}
+function selectAllNodes() {
+  setSelection(state.nodes.filter(n => n.type !== 'start').map(n => n.id));
+  showStatus(state.selection.size + ' nodes selected');
+}
+function duplicateSelected() {
+  // Duplicate the whole selection, preserving internal connections, and select the copies.
+  const nodes = selectedNodes().filter(n => n.type !== 'start');
+  if (nodes.length === 0) return;
+  const ids = new Set(nodes.map(n => n.id));
+  const conns = state.connections.filter(c => ids.has(c.from) && ids.has(c.to));
+  pasteNodes(JSON.parse(JSON.stringify(nodes)), JSON.parse(JSON.stringify(conns)));
+}
+
+// ===================== FIT / AUTO LAYOUT =====================
+function fitView() {
+  if (state.nodes.length === 0) { state.pan = {x:100,y:100}; state.zoom = 1; updateTransform(); return; }
+  let minX=Infinity,minY=Infinity,maxX=-Infinity,maxY=-Infinity;
+  for (const n of state.nodes) {
+    minX = Math.min(minX, n.x); minY = Math.min(minY, n.y);
+    maxX = Math.max(maxX, n.x + 200); maxY = Math.max(maxY, n.y + 110);
+  }
+  const cw = canvas.clientWidth, ch = canvas.clientHeight;
+  const w = maxX - minX + 120, h = maxY - minY + 120;
+  state.zoom = Math.max(0.2, Math.min(1.4, Math.min(cw / w, ch / h)));
+  state.pan.x = (cw - w * state.zoom) / 2 - minX * state.zoom + 60 * state.zoom;
+  state.pan.y = (ch - h * state.zoom) / 2 - minY * state.zoom + 60 * state.zoom;
+  updateTransform();
+}
+// Re-position nodes following the graph so they form a tidy left-to-right flow.
+// Layout is column-by-depth (X) and row-packed (Y). Instead of a single shared
+// row counter (which let deep branches collide), each subtree reserves a block
+// of rows equal to its own leaf count, and the parent is centred against the
+// vertical span of its children. This keeps ifImage/ifText/ifPixel branches
+// from overlapping no matter how deeply they nest.
+const LAYOUT_COL_W = 250;   // horizontal gap between depth columns
+const LAYOUT_ROW_H = 150;   // vertical gap between packed rows
+const LAYOUT_X0 = 100;
+const LAYOUT_Y0 = 80;
+function autoLayout() {
+  const start = state.nodes.find(n => n.type === 'start');
+  if (!start) return;
+  const seen = new Set();
+  // nextRow is shared across the whole walk: it is the next free row index.
+  // place() returns the row index assigned to `id` so the parent can centre
+  // itself on the average of its children's rows.
+  let nextRow = 0;
+  function childrenOf(id) {
+    return state.connections.filter(c => c.from === id).map(c => c.to);
+  }
+  function place(id, depth) {
+    if (seen.has(id)) return null;
+    seen.add(id);
+    const node = state.nodes.find(n => n.id === id);
+    if (!node) return null;
+    node.x = LAYOUT_X0 + depth * LAYOUT_COL_W;
+    const childRows = [];
+    for (const childId of childrenOf(id)) {
+      const r = place(childId, depth + 1);
+      if (r !== null) childRows.push(r);
+    }
+    let myRow;
+    if (childRows.length === 0) {
+      // Leaf: take the next free row.
+      myRow = nextRow++;
+    } else {
+      // Centre against the vertical span of placed children. This guarantees
+      // sibling subtrees never share rows because each leaf consumed a unique
+      // row index during its own placement.
+      const lo = childRows[0];
+      const hi = childRows[childRows.length - 1];
+      myRow = (lo + hi) / 2;
+    }
+    node.y = LAYOUT_Y0 + myRow * LAYOUT_ROW_H;
+    return myRow;
+  }
+  place(start.id, 0);
+  // Place any nodes not reachable from start (orphans) in a trailing column so
+  // they remain visible instead of stacking on top of the graph at 0,0.
+  let orphanRow = nextRow + 1;
+  for (const n of state.nodes) {
+    if (!seen.has(n.id)) {
+      seen.add(n.id);
+      n.x = LAYOUT_X0;
+      n.y = LAYOUT_Y0 + orphanRow * LAYOUT_ROW_H;
+      orphanRow++;
+    }
+  }
+  state.nodes.forEach(renderNode);
+  renderConnections();
+  fitView();
+}
+
+// ===================== HISTORY (Undo/Redo) =====================
+const history = { stack: [], index: -1, isRestoring: false };
+
+function pushHistory() {
+  if (history.isRestoring || state.loadingFromAHK) return;
+  const snap = { nodes: JSON.parse(JSON.stringify(state.nodes)), connections: JSON.parse(JSON.stringify(state.connections)), nextId: state.nextId };
+  history.stack = history.stack.slice(0, history.index + 1);
+  if (history.stack.length > 0) {
+    const last = history.stack[history.stack.length - 1];
+    if (JSON.stringify(last.nodes) === JSON.stringify(snap.nodes) && JSON.stringify(last.connections) === JSON.stringify(snap.connections)) return;
+  }
+  history.stack.push(snap);
+  if (history.stack.length > 50) history.stack.shift();
+  history.index = history.stack.length - 1;
+}
+
+function undo() {
+  if (history.index > 0) {
+    history.index--;
+    restoreHistory(history.stack[history.index]);
+    showStatus('Undo');
+  }
+}
+
+function redo() {
+  if (history.index < history.stack.length - 1) {
+    history.index++;
+    restoreHistory(history.stack[history.index]);
+    showStatus('Redo');
+  }
+}
+
+function restoreHistory(snap) {
+  history.isRestoring = true;
+  state.nodes = JSON.parse(JSON.stringify(snap.nodes));
+  state.connections = JSON.parse(JSON.stringify(snap.connections));
+  state.nextId = snap.nextId;
+  nodesLayer.innerHTML = '';
+  state.nodes.forEach(renderNode);
+  renderConnections();
+  // Drop any selected ids that no longer exist after the restore.
+  const alive = new Set(state.nodes.map(n => n.id));
+  state.selection = new Set([...state.selection].filter(id => alive.has(id)));
+  if (state.selectedNode) {
+     const stillExists = state.nodes.find(n => n.id === state.selectedNode.id);
+     state.selectedNode = stillExists || null;
+  }
+  applySelectionClasses();
+  renderPropPanel();
+  history.isRestoring = false;
+  scheduleSave();
+}
+
+// ===================== CLEAR =====================
+function clearAll(skipConfirm) {
+  if (!skipConfirm && state.nodes.length > 1 && !window.confirm('Clear all nodes?')) return;
+  state.nodes = []; state.connections = []; state.nextId = 1; state.selectedNode = null; state.selection = new Set();
+  nodesLayer.innerHTML = ''; svgLayer.innerHTML = '';
+  renderPropPanel();
+  if (!skipConfirm) scheduleSave();
+}
+
+// ===================== GRAPH -> STEPS =====================
+function graphToSteps() {
+  const startNode = state.nodes.find(n => n.type === 'start');
+  if (!startNode) { showStatus('Add a Start node first!'); return null; }
+  function chain(firstId, guard) {
+    const out = [];
+    let id = firstId;
+    while (id != null && !guard.has(id)) {
+      guard.add(id);
+      const node = state.nodes.find(n => n.id === id);
+      if (!node) break;
+      const def = NODE_DEFS[node.type];
+      const step = { type: node.type, ...JSON.parse(JSON.stringify(node.data)) };
+      step._x = Math.round(node.x); step._y = Math.round(node.y);
+      if (def.cat === 'condition') {
+        if (step.conditions && step.conditions.length > 0) {
+          for (let i = 0; i < step.conditions.length; i++) {
+            const thenC = state.connections.find(c => c.from === id && c.fromPin === 'cond' + i);
+            step.conditions[i].thenSteps = thenC ? chain(thenC.to, new Set(guard)) : [];
+          }
+        } else {
+          const thenC = state.connections.find(c => c.from === id && c.fromPin === 'then');
+          step.thenSteps = thenC ? chain(thenC.to, new Set(guard)) : [];
+        }
+        const elseC = state.connections.find(c => c.from === id && c.fromPin === 'else');
+        step.elseSteps = elseC ? chain(elseC.to, new Set(guard)) : [];
+      }
+      if (def.cat === 'loop') {
+        const bodyC = state.connections.find(c => c.from === id && c.fromPin === 'body');
+        step.steps = bodyC ? chain(bodyC.to, new Set(guard)) : [];
+      }
+      out.push(step);
+      const nextC = state.connections.find(c => c.from === id && c.fromPin === 'next');
+      id = nextC ? nextC.to : null;
+    }
+    return out;
+  }
+  const firstC = state.connections.find(c => c.from === startNode.id && c.fromPin === 'next');
+  return firstC ? chain(firstC.to, new Set()) : [];
+}
+
+// ===================== STEPS -> GRAPH (branch preserving) =====================
+function importSteps(steps) {
+  state.loadingFromAHK = true;
+  clearAll(true);
+  const start = addNode('start', 0, 0, true);
+  const lay = { y: 80 };
+  function build(list, depth, fromNode, fromPin) {
+    let prev = fromNode, prevPin = fromPin;
+    for (const step of (list || [])) {
+      const type = step.type || 'sleep';
+      if (!NODE_DEFS[type]) continue;
+      const hasPos = (typeof step._x === 'number' && typeof step._y === 'number');
+      const node = addNode(type, hasPos ? step._x : (100 + depth * 250), hasPos ? step._y : lay.y, true);
+      if (!hasPos) lay.y += 150;
+      const dataCopy = {...step};
+      delete dataCopy.type; delete dataCopy.thenSteps; delete dataCopy.elseSteps; delete dataCopy.steps; delete dataCopy._x; delete dataCopy._y;
+      node.data = {...NODE_DEFS[type].props, ...dataCopy};
+      renderNode(node);
+      state.connections.push({from: prev.id, fromPin: prevPin, to: node.id, toPin: 'in'});
+      const def = NODE_DEFS[type];
+      if (def.cat === 'condition') {
+        if (step.conditions && step.conditions.length > 0) {
+          node.data.conditions = [];
+          for (let i = 0; i < step.conditions.length; i++) {
+            const c = step.conditions[i];
+            const dataCopy = {...c};
+            delete dataCopy.thenSteps;
+            node.data.conditions.push(dataCopy);
+            build(c.thenSteps, depth + 1, node, 'cond' + i);
+          }
+        } else {
+          build(step.thenSteps, depth + 1, node, 'then');
+        }
+        build(step.elseSteps, depth + 1, node, 'else');
+      }
+      if (def.cat === 'loop') {
+        build(step.steps, depth + 1, node, 'body');
+      }
+      prev = node; prevPin = 'next';
+    }
+  }
+  build(steps, 0, start, 'next');
+  selectNode(null);
+  renderConnections();
+  fitView();
+  state.loadingFromAHK = false;
+  
+  // Reset history on complete load
+  history.stack = [];
+  history.index = -1;
+  pushHistory();
+}
+
+// ===================== AHK COMMUNICATION =====================
+const bridge = (window.chrome && window.chrome.webview) ? window.chrome.webview : null;
+function postToAHK(obj) { if (bridge) bridge.postMessage(obj); else console.log('->AHK', obj); }
+
+let _saveTimer = null;
+// Debounced live save: every edit on the board mirrors into the preset Steps.
+function scheduleSave() {
+  if (state.loadingFromAHK) return;
+  pushHistory();
+  syncDot.classList.add('saving');
+  if (_saveTimer) clearTimeout(_saveTimer);
+  _saveTimer = setTimeout(saveToAHK, 350);
+}
+function saveToAHK() {
+  if (_saveTimer) { clearTimeout(_saveTimer); _saveTimer = null; }
+  const steps = graphToSteps();
+  if (steps === null) { syncDot.classList.remove('saving'); return; }
+  postToAHK({action: 'save', steps});
+  syncDot.classList.remove('saving');
+  showStatus('Synced ' + steps.length + ' steps to MacroForge');
+}
+function loadFromAHK() { postToAHK({action: 'requestLoad'}); }
+
+// Apply a theme pushed from the AHK shell. The CSS already ships full dark and
+// light token sets (body.light overrides :root), so switching the body class
+// flips the whole board. We additionally sync the core accent/surface/text
+// colors from the AHK palette so both halves of the app stay identical even if
+// the native palette is tweaked later.
+function applyBoardTheme(pal) {
+  const name = (pal && pal.name === 'light') ? 'light' : 'dark';
+  document.body.classList.toggle('light', name === 'light');
+  document.body.classList.toggle('dark', name === 'dark');
+  if (!pal) return;
+  const hex = v => (v && /^#/.test(v)) ? v : ('#' + v);
+  const root = document.documentElement.style;
+  const set = (cssVar, key) => { if (pal[key]) root.setProperty(cssVar, hex(pal[key])); };
+  set('--bg', 'bg');
+  set('--surface', 'surface');
+  set('--surface-2', 'surfaceAlt');
+  set('--border', 'border');
+  set('--text', 'text');
+  set('--text-dim', 'textDim');
+  set('--accent', 'accent');
+  set('--accent-strong', 'accent');
+  set('--ok', 'success');
+  set('--warn', 'warn');
+  set('--danger', 'danger');
+  // Re-render connections so any color-class strokes repaint immediately.
+  try { renderConnections(); } catch (e) {}
+}
+
+function handleMessage(data) {
+  try {
+    const msg = typeof data === 'string' ? JSON.parse(data) : data;
+    if (msg.action === 'loadSteps' && Array.isArray(msg.steps)) importSteps(msg.steps);
+    else if (msg.action === 'requestSave') saveToAHK();
+    else if (msg.action === 'pickResult') applyPickResult(msg.result || msg);
+    else if (msg.action === 'applyTheme') applyBoardTheme(msg);
+  } catch (err) { console.error('Parse error:', err); }
+}
+if (bridge) bridge.addEventListener('message', e => handleMessage(e.data));
+else window.addEventListener('message', e => handleMessage(e.data));
+
+// ===================== KEYBOARD & CLIPBOARD =====================
+window.addEventListener('keydown', e => {
+  const editing = ['INPUT','TEXTAREA','SELECT'].includes(document.activeElement.tagName);
+  if (editing) return;
+  if ((e.key === 'Delete' || e.key === 'Backspace') && state.selection.size) { deleteSelected(); e.preventDefault(); }
+  else if (e.ctrlKey && e.key.toLowerCase() === 'a') { e.preventDefault(); selectAllNodes(); }
+  else if (e.key.toLowerCase() === 'f') fitView();
+  else if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === 'z') { e.preventDefault(); redo(); }
+  else if (e.ctrlKey && e.key.toLowerCase() === 'y') { e.preventDefault(); redo(); }
+  else if (e.ctrlKey && e.key.toLowerCase() === 'z') { e.preventDefault(); undo(); }
+  else if (e.ctrlKey && e.key.toLowerCase() === 's') { e.preventDefault(); saveToAHK(); }
+  else if (e.ctrlKey && e.key.toLowerCase() === 'd') { e.preventDefault(); duplicateSelected(); }
+});
+
+document.addEventListener('copy', e => {
+  if (['INPUT','TEXTAREA','SELECT'].includes(document.activeElement.tagName)) return;
+  copySelection(e);
+});
+function copySelection(e) {
+  // Copy every selected node except Start, plus connections that are fully internal.
+  const nodes = selectedNodes().filter(n => n.type !== 'start');
+  if (nodes.length === 0) return;
+  const ids = new Set(nodes.map(n => n.id));
+  const conns = state.connections.filter(c => ids.has(c.from) && ids.has(c.to));
+  const payload = { macroforge_nodes: true, nodes: JSON.parse(JSON.stringify(nodes)), connections: JSON.parse(JSON.stringify(conns)) };
+  e.clipboardData.setData('text/plain', JSON.stringify(payload));
+  e.preventDefault();
+  showStatus(nodes.length + ' node' + (nodes.length === 1 ? '' : 's') + ' copied');
+}
+
+document.addEventListener('paste', e => {
+  if (['INPUT','TEXTAREA','SELECT'].includes(document.activeElement.tagName)) return;
+  const text = e.clipboardData.getData('text');
+  try {
+    const payload = JSON.parse(text);
+    if (payload.macroforge_nodes && Array.isArray(payload.nodes)) {
+      pasteNodes(payload.nodes, payload.connections || []);
+    } else if (payload.macroforge_node && payload.node) {
+      // Backward compatibility with the old single-node clipboard format.
+      pasteNodes([payload.node], []);
+    }
+  } catch (err) {}
+});
+function pasteNodes(srcNodes, srcConns) {
+  const usable = srcNodes.filter(n => n.type !== 'start');
+  if (usable.length === 0) return;
+  const OFF = 40; // offset so pasted nodes do not sit exactly on the originals
+  const idMap = {}; const newIds = [];
+  for (const src of usable) {
+    const n = addNode(src.type, (src.x || 0) + OFF, (src.y || 0) + OFF, true);
+    if (!n) continue;
+    n.data = JSON.parse(JSON.stringify(src.data || {}));
+    idMap[src.id] = n.id;
+    newIds.push(n.id);
+    renderNode(n);
+  }
+  // Recreate connections that were fully internal to the pasted group.
+  for (const c of srcConns) {
+    if (idMap[c.from] != null && idMap[c.to] != null) {
+      state.connections.push({ from: idMap[c.from], fromPin: c.fromPin, to: idMap[c.to], toPin: c.toPin });
+    }
+  }
+  renderConnections();
+  renderMinimap();
+  // Everything just pasted becomes the new selection.
+  setSelection(newIds);
+  scheduleSave();
+  showStatus(newIds.length + ' node' + (newIds.length === 1 ? '' : 's') + ' pasted');
+}
+
+// ===================== RESIZE HANDLING =====================
+// When the host WebView control is resized (e.g. the MacroForge window is
+// maximized / goes fullscreen), the flex/percentage CSS reflows automatically,
+// but the SVG connection paths and the minimap are computed from pixel sizes,
+// so they must be redrawn. Coalesced via requestAnimationFrame so a burst of
+// resize events results in a single redraw.
+let _resizeRaf = 0;
+function onBoardResize() {
+  if (_resizeRaf) cancelAnimationFrame(_resizeRaf);
+  _resizeRaf = requestAnimationFrame(() => {
+    _resizeRaf = 0;
+    updateTransform();
+    renderConnections();
+    renderMinimap();
+  });
+}
+window.addEventListener('resize', onBoardResize);
+
+// ===================== INIT =====================
+updateTransform();
+addNode('start', 0, 0, true);
+selectNode(null);
+fitView();
+loadFromAHK();   // pull current preset steps as soon as the board is ready
+</script>
+</body>
+</html>

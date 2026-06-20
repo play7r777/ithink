@@ -1,0 +1,112 @@
+﻿[2026-06-20 13:05:21] [INFO] Theme applied: dark
+[2026-06-20 13:05:21] [INFO] Bound panic -> ^+Esc
+[2026-06-20 13:05:21] [INFO] Bound pause -> F3
+[2026-06-20 13:05:21] [INFO] Bound start -> F1
+[2026-06-20 13:05:21] [INFO] Bound stop -> F2
+[2026-06-20 13:05:22] [INFO] TabChange: tabIdx=2 prevTab=1 wvReady=0
+[2026-06-20 13:05:22] [INFO] WebView2: creating controller for board container hwnd
+[2026-06-20 13:05:22] [INFO] WebView2: controller created. GUI hwnd=528796 type=WebView2.Controller
+[2026-06-20 13:05:22] [INFO] UpdateBoardBounds: container-local bounds w=1308 h=966 visible=1
+[2026-06-20 13:05:22] [INFO] RaiseWebView: raised board container hwnd=463156 above tab
+[2026-06-20 13:05:22] [INFO] WebView2: loading nodeboard HTML (70596 chars)
+[2026-06-20 13:05:22] [INFO] InitWebView done: wvController type=WebView2.Controller IsVisible=1
+[2026-06-20 13:05:22] [INFO] WebView2 Board initialized
+[2026-06-20 13:05:22] [INFO] WebView msg from JS: {"action":"requestLoad"}
+[2026-06-20 13:05:22] [INFO] WebView2 navigation completed
+[2026-06-20 13:05:22] [INFO] UpdateBoardBounds: container-local bounds w=1308 h=966 visible=1
+[2026-06-20 13:05:22] [INFO] RaiseWebView: raised board container hwnd=463156 above tab
+[2026-06-20 13:05:22] [INFO] NavCompleted: MoveFocus ok, bounds re-applied
+[2026-06-20 13:05:22] [INFO] RaiseWebView: raised board container hwnd=463156 above tab
+[2026-06-20 13:05:22] [WARN] pushThemeToBoard failed: (0x80070057) The parameter is incorrect.
+[2026-06-20 13:05:23] [INFO] UpdateBoardBounds: container-local bounds w=2219 h=1335 visible=1
+[2026-06-20 13:05:23] [INFO] RaiseWebView: raised board container hwnd=463156 above tab
+[2026-06-20 13:05:23] [INFO] UpdateBoardBounds: container-local bounds w=2219 h=1335 visible=1
+[2026-06-20 13:05:23] [INFO] RaiseWebView: raised board container hwnd=463156 above tab
+[2026-06-20 13:05:23] [INFO] UpdateBoardBounds: container-local bounds w=2219 h=1335 visible=1
+[2026-06-20 13:05:23] [INFO] RaiseWebView: raised board container hwnd=463156 above tab
+[2026-06-20 13:12:19] [INFO] UpdateBoardBounds: container-local bounds w=2219 h=1335 visible=1
+[2026-06-20 13:12:19] [INFO] RaiseWebView: raised board container hwnd=463156 above tab
+[2026-06-20 13:12:19] [INFO] UpdateBoardBounds: container-local bounds w=2219 h=1335 visible=1
+[2026-06-20 13:12:19] [INFO] RaiseWebView: raised board container hwnd=463156 above tab
+[2026-06-20 13:22:10] [INFO] Theme applied: dark
+[2026-06-20 13:22:10] [INFO] Bound panic -> ^+Esc
+[2026-06-20 13:22:10] [INFO] Bound pause -> F3
+[2026-06-20 13:22:10] [INFO] Bound start -> F1
+[2026-06-20 13:22:10] [INFO] Bound stop -> F2
+[2026-06-20 13:24:36] [INFO] Theme applied: dark
+[2026-06-20 13:24:36] [INFO] Bound panic -> ^+Esc
+[2026-06-20 13:24:36] [INFO] Bound pause -> F3
+[2026-06-20 13:24:36] [INFO] Bound start -> F1
+[2026-06-20 13:24:36] [INFO] Bound stop -> F2
+[2026-06-20 13:24:37] [INFO] TabChange: tabIdx=2 prevTab=1 wvReady=0
+[2026-06-20 13:24:37] [INFO] WebView2: creating controller for board container hwnd
+[2026-06-20 13:24:38] [INFO] WebView2: controller created. GUI hwnd=657060 type=WebView2.Controller
+[2026-06-20 13:24:38] [INFO] UpdateBoardBounds: container-local bounds w=1308 h=966 visible=1
+[2026-06-20 13:24:38] [INFO] RaiseWebView: raised board container hwnd=725134 above tab
+[2026-06-20 13:24:38] [INFO] WebView2: loading nodeboard HTML (70596 chars)
+[2026-06-20 13:24:38] [INFO] InitWebView done: wvController type=WebView2.Controller IsVisible=1
+[2026-06-20 13:24:38] [INFO] WebView2 Board initialized
+[2026-06-20 13:24:38] [INFO] WebView msg from JS: {"action":"requestLoad"}
+[2026-06-20 13:24:38] [INFO] WebView2 navigation completed
+[2026-06-20 13:24:38] [INFO] UpdateBoardBounds: container-local bounds w=1308 h=966 visible=1
+[2026-06-20 13:24:38] [INFO] RaiseWebView: raised board container hwnd=725134 above tab
+[2026-06-20 13:24:38] [INFO] NavCompleted: MoveFocus ok, bounds re-applied
+[2026-06-20 13:24:38] [INFO] RaiseWebView: raised board container hwnd=725134 above tab
+[2026-06-20 13:24:38] [WARN] pushThemeToBoard failed: (0x80070057) The parameter is incorrect.
+[2026-06-20 13:24:40] [INFO] TabChange: tabIdx=3 prevTab=2 wvReady=1
+[2026-06-20 13:24:40] [INFO] WebView msg from JS: {"action":"save","steps":[{"type":"click","button":"left","count":1,"x":"","y":"","_x":146,"_y":114},{"type":"sleep","ms
+[2026-06-20 13:24:40] [INFO] Board: imported 2 steps from visual board
+[2026-06-20 13:24:41] [INFO] TabChange: tabIdx=4 prevTab=3 wvReady=1
+[2026-06-20 13:24:41] [INFO] TabChange: tabIdx=5 prevTab=4 wvReady=1
+[2026-06-20 16:29:23] [INFO] Theme applied: dark
+[2026-06-20 16:29:23] [INFO] Bound panic -> ^+Esc
+[2026-06-20 16:29:23] [INFO] Bound pause -> F3
+[2026-06-20 16:29:23] [INFO] Bound start -> F1
+[2026-06-20 16:29:23] [INFO] Bound stop -> F2
+[2026-06-20 16:29:24] [INFO] TabChange: tabIdx=2 prevTab=1 wvReady=0
+[2026-06-20 16:29:24] [INFO] WebView2: creating controller for board container hwnd
+[2026-06-20 16:29:25] [INFO] WebView2: controller created. GUI hwnd=984978 type=WebView2.Controller
+[2026-06-20 16:29:25] [INFO] UpdateBoardBounds: container-local bounds w=1308 h=966 visible=1
+[2026-06-20 16:29:25] [INFO] RaiseWebView: raised board container hwnd=1901970 above tab
+[2026-06-20 16:29:25] [INFO] WebView2: loading nodeboard HTML (70596 chars)
+[2026-06-20 16:29:25] [INFO] InitWebView done: wvController type=WebView2.Controller IsVisible=1
+[2026-06-20 16:29:25] [INFO] WebView2 Board initialized
+[2026-06-20 16:29:25] [INFO] WebView msg from JS: {"action":"requestLoad"}
+[2026-06-20 16:29:25] [INFO] WebView2 navigation completed
+[2026-06-20 16:29:25] [INFO] UpdateBoardBounds: container-local bounds w=1308 h=966 visible=1
+[2026-06-20 16:29:25] [INFO] RaiseWebView: raised board container hwnd=1901970 above tab
+[2026-06-20 16:29:25] [INFO] NavCompleted: MoveFocus ok, bounds re-applied
+[2026-06-20 16:29:25] [INFO] RaiseWebView: raised board container hwnd=1901970 above tab
+[2026-06-20 16:29:25] [WARN] pushThemeToBoard failed: (0x80070057) The parameter is incorrect.
+[2026-06-20 16:29:25] [INFO] UpdateBoardBounds: container-local bounds w=2219 h=1335 visible=1
+[2026-06-20 16:29:25] [INFO] RaiseWebView: raised board container hwnd=1901970 above tab
+[2026-06-20 16:29:25] [INFO] UpdateBoardBounds: container-local bounds w=2219 h=1335 visible=1
+[2026-06-20 16:29:25] [INFO] RaiseWebView: raised board container hwnd=1901970 above tab
+[2026-06-20 16:29:25] [INFO] UpdateBoardBounds: container-local bounds w=2219 h=1335 visible=1
+[2026-06-20 16:29:25] [INFO] RaiseWebView: raised board container hwnd=1901970 above tab
+[2026-06-20 16:36:26] [INFO] TabChange: tabIdx=3 prevTab=2 wvReady=1
+[2026-06-20 16:36:26] [INFO] WebView msg from JS: {"action":"save","steps":[{"type":"click","button":"left","count":1,"x":"","y":"","_x":216,"_y":3},{"type":"sleep","ms":
+[2026-06-20 16:36:26] [INFO] Board: imported 2 steps from visual board
+[2026-06-20 16:36:27] [INFO] TabChange: tabIdx=4 prevTab=3 wvReady=1
+[2026-06-20 16:36:27] [INFO] TabChange: tabIdx=5 prevTab=4 wvReady=1
+[2026-06-20 16:36:28] [INFO] TabChange: tabIdx=4 prevTab=5 wvReady=1
+[2026-06-20 16:36:28] [INFO] TabChange: tabIdx=3 prevTab=4 wvReady=1
+[2026-06-20 16:36:29] [INFO] TabChange: tabIdx=1 prevTab=3 wvReady=1
+[2026-06-20 16:36:29] [INFO] TabChange: tabIdx=2 prevTab=1 wvReady=1
+[2026-06-20 16:36:29] [INFO] UpdateBoardBounds: container-local bounds w=2219 h=1335 visible=1
+[2026-06-20 16:36:29] [INFO] RaiseWebView: raised board container hwnd=1901970 above tab
+[2026-06-20 16:36:29] [INFO] UpdateBoardBounds: container-local bounds w=2219 h=1335 visible=1
+[2026-06-20 16:36:29] [INFO] RaiseWebView: raised board container hwnd=1901970 above tab
+[2026-06-20 16:36:32] [INFO] TabChange: tabIdx=3 prevTab=2 wvReady=1
+[2026-06-20 16:36:32] [INFO] WebView msg from JS: {"action":"save","steps":[{"type":"click","button":"left","count":1,"x":"","y":"","_x":216,"_y":3},{"type":"sleep","ms":
+[2026-06-20 16:36:32] [INFO] Board: imported 2 steps from visual board
+[2026-06-20 16:36:32] [INFO] TabChange: tabIdx=2 prevTab=3 wvReady=1
+[2026-06-20 16:36:32] [INFO] UpdateBoardBounds: container-local bounds w=2219 h=1335 visible=1
+[2026-06-20 16:36:32] [INFO] RaiseWebView: raised board container hwnd=1901970 above tab
+[2026-06-20 16:36:32] [INFO] UpdateBoardBounds: container-local bounds w=2219 h=1335 visible=1
+[2026-06-20 16:36:32] [INFO] RaiseWebView: raised board container hwnd=1901970 above tab
+[2026-06-20 16:36:32] [INFO] TabChange: tabIdx=1 prevTab=2 wvReady=1
+[2026-06-20 16:36:32] [INFO] WebView msg from JS: {"action":"save","steps":[{"type":"click","button":"left","count":1,"x":"","y":"","_x":216,"_y":3},{"type":"sleep","ms":
+[2026-06-20 16:36:32] [INFO] Board: imported 2 steps from visual board
+[2026-06-20 16:45:21] [INFO] UpdateBoardBounds: container-local bounds w=2219 h=1335 visible=0
+[2026-06-20 16:45:21] [INFO] RaiseWebView: raised board container hwnd=1901970 above tab

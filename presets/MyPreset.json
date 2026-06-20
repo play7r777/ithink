@@ -1,0 +1,129 @@
+﻿{
+  "description": "Loops until success (Mythic/Secret/God text found), then stops.",
+  "hotkeys": {
+    "panic": "^+Esc",
+    "pause": "F3",
+    "start": "F1",
+    "stop": "F2"
+  },
+  "name": "MyPreset",
+  "settings": {
+    "focusOnStart": 0,
+    "repeatCount": 0,
+    "speedMultiplier": 1.0,
+    "startDelayMs": 1000,
+    "stopOnError": 1,
+    "targetWindow": ""
+  },
+  "steps": [
+    {
+      "jitter": 0,
+      "ms": 6600,
+      "type": "sleep"
+    },
+    {
+      "captureMode": "auto",
+      "conditions": [
+        {
+          "captureMode": "auto",
+          "language": "Auto",
+          "ocrScale": 2,
+          "ocrX1": "",
+          "ocrX2": "",
+          "ocrY1": "",
+          "ocrY2": "",
+          "searchText": "God",
+          "thenSteps": [
+            {
+              "jitter": 0,
+              "ms": 1,
+              "type": "sleep"
+            },
+            {
+              "duration": 3000,
+              "key": "space",
+              "type": "key"
+            },
+            {
+              "type": "stop"
+            }
+          ],
+          "windowTitle": ""
+        },
+        {
+          "captureMode": "auto",
+          "language": "Auto",
+          "ocrScale": 2,
+          "ocrX1": "",
+          "ocrX2": "",
+          "ocrY1": "",
+          "ocrY2": "",
+          "searchText": "Secret",
+          "thenSteps": [
+            {
+              "jitter": 0,
+              "ms": 1,
+              "type": "sleep"
+            },
+            {
+              "duration": 3000,
+              "key": "space",
+              "type": "key"
+            },
+            {
+              "type": "stop"
+            }
+          ],
+          "windowTitle": ""
+        },
+        {
+          "captureMode": "auto",
+          "language": "Auto",
+          "ocrScale": 2,
+          "ocrX1": "",
+          "ocrX2": "",
+          "ocrY1": "",
+          "ocrY2": "",
+          "searchText": "Mythic",
+          "thenSteps": [
+            {
+              "jitter": 0,
+              "ms": 1,
+              "type": "sleep"
+            },
+            {
+              "duration": 3000,
+              "key": "space",
+              "type": "key"
+            },
+            {
+              "type": "stop"
+            }
+          ],
+          "windowTitle": ""
+        }
+      ],
+      "elseSteps": [
+        {
+          "jitter": 25,
+          "ms": 50,
+          "type": "sleep"
+        },
+        {
+          "duration": 150,
+          "key": "e",
+          "type": "key"
+        }
+      ],
+      "language": "Auto",
+      "ocrScale": 2,
+      "ocrX1": "",
+      "ocrX2": "",
+      "ocrY1": "",
+      "ocrY2": "",
+      "searchText": "",
+      "type": "ifText",
+      "windowTitle": ""
+    }
+  ]
+}

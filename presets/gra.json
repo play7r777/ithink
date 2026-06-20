@@ -1,0 +1,19 @@
+﻿{
+  "description": "",
+  "hotkeys": {
+    "panic": "Esc",
+    "pause": "F3",
+    "start": "F1",
+    "stop": "F2"
+  },
+  "name": "gra",
+  "settings": {
+    "focusOnStart": 0,
+    "repeatCount": 1,
+    "speedMultiplier": 1.0,
+    "startDelayMs": 1000,
+    "stopOnError": 1,
+    "targetWindow": ""
+  },
+  "steps": []
+}

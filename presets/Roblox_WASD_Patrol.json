@@ -1,0 +1,62 @@
+﻿{
+  "description": "Пример для любой игры с WASD-управлением (Roblox в т.ч.). Идёт квадратом: 1с W, 1с D, 1с S, 1с A, между ними короткие паузы. focusOnStart активирует окно Roblox перед запуском. [Встроенный пресет — нельзя изменить.]",
+  "hotkeys": {
+    "panic": "^+Esc",
+    "pause": "F3",
+    "start": "F1",
+    "stop": "F2"
+  },
+  "name": "Roblox_WASD_Patrol",
+  "settings": {
+    "focusOnStart": 1,
+    "repeatCount": 0,
+    "speedMultiplier": 1.0,
+    "startDelayMs": 1500,
+    "stopOnError": 1,
+    "targetWindow": "ahk_exe RobloxPlayerBeta.exe"
+  },
+  "steps": [
+    {
+      "count": 0,
+      "steps": [
+        {
+          "duration": 1000,
+          "key": "w",
+          "type": "key"
+        },
+        {
+          "ms": 100,
+          "type": "sleep"
+        },
+        {
+          "duration": 1000,
+          "key": "d",
+          "type": "key"
+        },
+        {
+          "ms": 100,
+          "type": "sleep"
+        },
+        {
+          "duration": 1000,
+          "key": "s",
+          "type": "key"
+        },
+        {
+          "ms": 100,
+          "type": "sleep"
+        },
+        {
+          "duration": 1000,
+          "key": "a",
+          "type": "key"
+        },
+        {
+          "ms": 100,
+          "type": "sleep"
+        }
+      ],
+      "type": "loop"
+    }
+  ]
+}

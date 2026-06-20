@@ -1,0 +1,62 @@
+﻿{
+  "description": "Пример условной логики (как ветвление в NatroMacro): каждые 2 секунды ищет images/reward.png в области (0,0)-(800,600). Если найдено — кликает по (400,300) и пишет в лог; если нет — жмёт Space. Положите свой PNG в images/. [Встроенный пресет — нельзя изменить.]",
+  "hotkeys": {
+    "panic": "^+Esc",
+    "pause": "F3",
+    "start": "F1",
+    "stop": "F2"
+  },
+  "name": "Conditional_ImageCheck",
+  "settings": {
+    "focusOnStart": 0,
+    "repeatCount": 0,
+    "speedMultiplier": 1.0,
+    "startDelayMs": 1000,
+    "stopOnError": 0,
+    "targetWindow": ""
+  },
+  "steps": [
+    {
+      "count": 0,
+      "steps": [
+        {
+          "elseSteps": [
+            {
+              "message": "No reward, pressing space.",
+              "type": "log"
+            },
+            {
+              "key": "Space",
+              "type": "key"
+            }
+          ],
+          "image": "reward.png",
+          "thenSteps": [
+            {
+              "message": "Reward found, clicking.",
+              "type": "log"
+            },
+            {
+              "button": "left",
+              "count": 1,
+              "type": "click",
+              "x": 400,
+              "y": 300
+            }
+          ],
+          "type": "ifImage",
+          "variation": 30,
+          "x1": 0,
+          "x2": 800,
+          "y1": 0,
+          "y2": 600
+        },
+        {
+          "ms": 2000,
+          "type": "sleep"
+        }
+      ],
+      "type": "loop"
+    }
+  ]
+}

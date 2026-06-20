@@ -1,0 +1,29 @@
+﻿{
+  "description": "Простой автокликер. Кликает левой кнопкой каждые 100мс, пока работает (repeatCount=0). [Встроенный пресет — нельзя изменить. Сделайте копию через New, если нужно настроить.]",
+  "hotkeys": {
+    "panic": "^+Esc",
+    "pause": "F3",
+    "start": "F1",
+    "stop": "F2"
+  },
+  "name": "Autoclicker",
+  "settings": {
+    "focusOnStart": 0,
+    "repeatCount": 0,
+    "speedMultiplier": 1.0,
+    "startDelayMs": 1000,
+    "stopOnError": 1,
+    "targetWindow": ""
+  },
+  "steps": [
+    {
+      "button": "left",
+      "count": 1,
+      "type": "click"
+    },
+    {
+      "ms": 100,
+      "type": "sleep"
+    }
+  ]
+}
