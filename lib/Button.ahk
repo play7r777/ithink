@@ -27,7 +27,7 @@ class ThemedButton {
     static _gdipToken  := 0
     static _wmHooked   := false
     static _subclassCb := 0
-    static _radius     := 7       ; corner radius in px
+    static _radius     := 9       ; corner radius in px
 
     ; ---- lifecycle -------------------------------------------------------
 
@@ -165,9 +165,21 @@ class ThemedButton {
         ;    outside the rounded shape blend in.
         this._fillRect(hDC, L, T, w, h, behind)
         ; 2) anti-aliased rounded fill (+ border for secondary buttons).
+        ;    A subtle top-lit vertical gradient gives the buttons the same
+        ;    "lit from above" feel as the board's gradient node headers.
+        argbTop := 0
+        if (!disabled) {
+            topF := ThemedButton._blend(c.fill, 0xFFFFFF, 0.10)
+            botF := ThemedButton._blend(c.fill, 0x000000, 0.08)
+            argbTop := ThemedButton._argbI(topF)
+            fillArgb := ThemedButton._argbI(botF)
+        } else {
+            fillArgb := ThemedButton._argbI(c.fill)
+        }
         ThemedButton._roundFill(hDC, L, T, w, h, ThemedButton._radius
-            , ThemedButton._argbI(c.fill)
-            , c.border >= 0 ? ThemedButton._argbI(c.border) : 0)
+            , fillArgb
+            , c.border >= 0 ? ThemedButton._argbI(c.border) : 0
+            , argbTop)
         ; 3) focus ring just inside the edge.
         if (focused && !disabled)
             ThemedButton._roundFill(hDC, L + 1, T + 1, w - 2, h - 2
@@ -247,7 +259,10 @@ class ThemedButton {
         ThemedButton._gdipToken := token
     }
 
-    static _roundFill(hDC, x, y, w, h, r, argbFill, argbBorder := 0) {
+    ; argbTop (optional): when nonzero, the rounded shape is filled with a
+    ; vertical gradient from argbTop (top) to argbFill (bottom). Otherwise a
+    ; flat argbFill is used.
+    static _roundFill(hDC, x, y, w, h, r, argbFill, argbBorder := 0, argbTop := 0) {
         if !ThemedButton._gdipToken
             return
         g := 0
@@ -259,7 +274,23 @@ class ThemedButton {
         DllCall("gdiplus\GdipCreatePath", "Int", 0, "Ptr*", &path)
         inset := 0.75
         ThemedButton._roundPath(path, x + inset, y + inset, w - inset * 2, h - inset * 2, r)
-        if argbFill {
+        if (argbFill && argbTop) {
+            ; Vertical linear gradient brush spanning the button rect.
+            rectF := Buffer(16, 0)
+            NumPut("Float", x, "Float", y, "Float", (w > 0 ? w : 1), "Float", (h > 0 ? h : 1), rectF)
+            lbr := 0
+            ; mode 1 = LinearGradientModeVertical, wrap 1 = WrapModeTileFlipX
+            DllCall("gdiplus\GdipCreateLineBrushFromRect", "Ptr", rectF, "UInt", argbTop, "UInt", argbFill, "Int", 1, "Int", 1, "Ptr*", &lbr)
+            if lbr {
+                DllCall("gdiplus\GdipFillPath", "Ptr", g, "Ptr", lbr, "Ptr", path)
+                DllCall("gdiplus\GdipDeleteBrush", "Ptr", lbr)
+            } else {
+                br := 0
+                DllCall("gdiplus\GdipCreateSolidFill", "UInt", argbFill, "Ptr*", &br)
+                DllCall("gdiplus\GdipFillPath", "Ptr", g, "Ptr", br, "Ptr", path)
+                DllCall("gdiplus\GdipDeleteBrush", "Ptr", br)
+            }
+        } else if argbFill {
             br := 0
             DllCall("gdiplus\GdipCreateSolidFill", "UInt", argbFill, "Ptr*", &br)
             DllCall("gdiplus\GdipFillPath", "Ptr", g, "Ptr", br, "Ptr", path)
