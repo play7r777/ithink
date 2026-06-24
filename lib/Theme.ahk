@@ -15,12 +15,14 @@ class Theme {
     static _palettes := Map(
         "dark", Map(
             "name",        "dark",
-            "bg",          "12131C",
-            "surface",     "1B1D2A",
-            "surfaceAlt",  "232637",
-            "border",      "2E3350",
-            "text",        "E6E9F2",
-            "textDim",     "9AA0B5",
+            ; Neutral near-black (de-blued). Was 12131C / 1B1D2A (blue-tinted).
+            "bg",          "0D0E11",
+            "surface",     "15161B",
+            "surfaceAlt",  "1C1E25",
+            ; Thin GRAY hairline border instead of the old bright blue 2E3350.
+            "border",      "3A3E48",
+            "text",        "E8EAF0",
+            "textDim",     "969BA8",
             "accent",      "6C8CFF",
             "accentText",  "FFFFFF",
             "success",     "3FB950",
